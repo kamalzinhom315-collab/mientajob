@@ -226,6 +226,12 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
     <div id="dashTargetBody"></div>
   </div>
 
+  <!-- Per-seller targets -->
+  <div class="stat-c" id="dashSellerTargetCard" style="border-color:var(--b2);margin-bottom:16px;text-align:right;padding:14px 16px;display:none">
+    <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" id="dashSellerTargetLbl">👥 تارجت كل بائع</div>
+    <div id="dashSellerTargetBody"></div>
+  </div>
+
   <!-- Target history -->
   <div class="lbl" id="dashTargetHistLbl" style="display:none">📅 سجل التارجت لكل شهر</div>
   <div id="dashTargetHistory"></div>
@@ -1969,6 +1975,7 @@ function renderDashboard(){
 
   // Target/Goal
   renderTargetCard(monthPrefix,monthName,monthQty,monthRev);
+  renderSellerTargets(monthPrefix,monthName,monthSales);
   renderTargetHistory(monthPrefix);
 
   // Totals (always current)
@@ -2228,7 +2235,9 @@ function saveTarget(){
   const val=parseFloat(document.getElementById('targetInput').value);
   if(!val||val<=0){toast('⚠️ أدخل قيمة تارجت صحيحة');return}
   const targets=getTargets();
+  const prevPS=(targets[targetEditMonth]&&targets[targetEditMonth].perSeller)||undefined;
   targets[targetEditMonth]={type:targetEditType,value:val};
+  if(prevPS)targets[targetEditMonth].perSeller=prevPS;
   setTargets(targets);
   closeOv('targetModal');
   renderDashboard();
@@ -2266,6 +2275,77 @@ function renderTargetCard(monthPrefix,monthName,monthQty,monthRev){
       ?'<div style="font-size:11px;color:var(--grn)">🎉 تخطيت التارجت بـ '+(achieved-t.value).toLocaleString('ar-EG')+' '+unit+'</div>'
       :'<div style="font-size:11px;color:var(--muted)">باقي <strong style="color:'+color+'">'+remaining.toLocaleString('ar-EG')+' '+unit+'</strong> للوصول للتارجت</div>'
     );
+}
+
+
+// ===== PER-SELLER TARGETS =====
+function renderSellerTargets(monthPrefix,monthName,monthSales){
+  const card=document.getElementById('dashSellerTargetCard');
+  const body=document.getElementById('dashSellerTargetBody');
+  const lbl=document.getElementById('dashSellerTargetLbl');
+  if(!card||!body)return;
+  const sellers=getSellers();
+  const t=getTargets()[monthPrefix];
+  const per=(t&&t.perSeller)?t.perSeller:{};
+  const hasAny=Object.keys(per).length>0;
+  const hasSales=monthSales.length>0;
+  if(!hasAny&&!hasSales){card.style.display='none';return}
+  card.style.display='block';
+  if(lbl)lbl.textContent='👥 تارجت كل بائع - '+monthName;
+  const agg={};
+  monthSales.forEach(function(x){
+    const n=x.sellerName||'غير محدد';
+    if(!agg[n])agg[n]={q:0,r:0};
+    agg[n].q+=x.qty;agg[n].r+=(x.total||0);
+  });
+  const names=sellers.map(function(x){return x.name});
+  Object.keys(agg).forEach(function(n){if(names.indexOf(n)<0)names.push(n)});
+  names.sort(function(a,b){return ((agg[b]||{r:0}).r)-((agg[a]||{r:0}).r)});
+  let html='';
+  names.forEach(function(n,i){
+    const a=agg[n]||{q:0,r:0};
+    const tg=per[n]||{};
+    const hasR=tg.rev>0,hasQ=tg.qty>0;
+    const pctR=hasR?Math.min(100,a.r/tg.rev*100):0;
+    const hit=hasR&&a.r>=tg.rev;
+    const color=!hasR?'var(--txt2)':(hit?'var(--grn)':(pctR>=70?'var(--acc)':'var(--org)'));
+    const safe=n.replace(/'/g,"");
+    html+='<div style="padding:12px 0;'+(i>0?'border-top:1px solid var(--b);':'')+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+        '<div style="font-size:14px;font-weight:900">'+(i===0&&a.r>0?'🥇 ':'')+n+'</div>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+
+          (hasR?'<div style="font-size:12px;font-weight:800;color:'+color+'">'+(hit?'🏆 ':'')+pctR.toFixed(0)+'%</div>':'')+
+          '<button class="btn btn-s" style="width:auto;padding:4px 10px;font-size:11px" onclick="editSellerTarget(\''+safe+'\')">✏️</button>'+
+        '</div>'+
+      '</div>'+
+      '<div style="font-size:18px;font-weight:900;color:'+color+';margin-bottom:6px">'+a.r.toLocaleString('ar-EG')+'<span style="font-size:11px;color:var(--muted)">'+(hasR?' / '+tg.rev.toLocaleString('ar-EG'):'')+' ج</span></div>'+
+      (hasR?'<div class="bar-bg" style="height:7px;margin-bottom:6px"><div class="bar-fill" style="width:'+pctR+'%;background:'+color+'"></div></div>':'')+
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">'+
+        '<span>🔢 '+a.q.toLocaleString('ar-EG')+(hasQ?' / '+tg.qty.toLocaleString('ar-EG'):'')+' قطعة'+(hasQ?' ('+Math.min(100,a.q/tg.qty*100).toFixed(0)+'%)':'')+'</span>'+
+        '<span>'+(hasR?(hit?'تخطى بـ '+(a.r-tg.rev).toLocaleString('ar-EG')+' ج':'باقي '+Math.max(0,tg.rev-a.r).toLocaleString('ar-EG')+' ج'):'لا يوجد تارجت - اضغط ✏️')+'</span>'+
+      '</div>'+
+    '</div>';
+  });
+  body.innerHTML=html;
+}
+
+function editSellerTarget(name){
+  const sel=document.getElementById('dashMonthSel');
+  const mp=sel?sel.value:new Date().toISOString().slice(0,7);
+  const targets=getTargets();
+  const t=targets[mp]||{type:'rev',value:0};
+  if(!t.perSeller)t.perSeller={};
+  const cur=t.perSeller[name]||{};
+  const r=prompt('تارجت '+name+' بالجنيه (الإيراد):',cur.rev||'');
+  if(r===null)return;
+  const q=prompt('تارجت '+name+' بالقطع:',cur.qty||'');
+  if(q===null)return;
+  const rv=parseFloat(r)||0,qv=parseInt(q)||0;
+  if(rv>0||qv>0)t.perSeller[name]={rev:rv,qty:qv};else delete t.perSeller[name];
+  targets[mp]=t;
+  setTargets(targets);
+  renderDashboard();
+  toast('✅ تم حفظ تارجت '+name);
 }
 
 function renderTargetHistory(currentMonthPrefix){
