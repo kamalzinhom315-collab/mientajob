@@ -2103,35 +2103,42 @@ function shareWhatsApp(type){
 
   if(type==='today'){
     const todaySales=allSales.filter(s=>s.date===today);
-    const todayRets=allRets.filter(r=>r.date===today);
-    const qty=todaySales.reduce((s,x)=>s+x.qty,0);
-    const rev=todaySales.reduce((s,x)=>s+(x.total||0),0);
-    const retQty=todayRets.reduce((s,x)=>s+x.qty,0);
-    const dateStr=now.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'});
-
-    // Top products today
-    const pc={};todaySales.forEach(s=>{pc[s.desc]=(pc[s.desc]||0)+s.qty});
-    const top=Object.entries(pc).sort((a,b)=>b[1]-a[1]).slice(0,3);
-
-    msg=`📦 *تقرير مبيعات يومي - Mienta*\n`;
-    msg+=`📅 ${dateStr}\n`;
-    msg+=`${'─'.repeat(28)}\n\n`;
-    msg+=`💰 *المبيعات:* ${qty} قطعة\n`;
-    if(rev>0)msg+=`💵 *الإيراد:* ${rev.toLocaleString('ar-EG')} ج.م\n`;
-    if(todaySales.length>0)msg+=`🧾 *عدد الفواتير:* ${todaySales.length} فاتورة\n`;
-    if(retQty>0)msg+=`↩️ *المرتجعات:* ${retQty} قطعة\n`;
-
-    if(top.length){
-      msg+=`\n📊 *أكثر المنتجات مبيعاً:*\n`;
-      top.forEach(([desc,q],i)=>{
-        const short=desc.length>35?desc.slice(0,35)+'...':desc;
-        msg+=`${i+1}. ${short} (${q} قطعة)\n`;
+    const fmt=function(n){return Math.round(n).toLocaleString('en-US')};
+    const modelOf=function(x){
+      const d=String(x.desc||x.code||'');
+      const toks=d.split(/\s+/);
+      for(let k=0;k<toks.length;k++){
+        if(/^[A-Za-z]{2,}\d+[A-Za-z]*$/.test(toks[k]))return toks[k];
+      }
+      return d.replace(/^MIENTA\s+/i,'').slice(0,24)||String(x.code);
+    };
+    const sellers=getSellers();
+    const names=sellers.map(function(z){return z.name});
+    todaySales.forEach(function(x){const n=x.sellerName||'غير محدد';if(names.indexOf(n)<0)names.push(n)});
+    let grand=0;
+    const blocks=[];
+    names.forEach(function(n){
+      const list=todaySales.filter(function(x){return (x.sellerName||'غير محدد')===n});
+      if(!list.length)return;
+      const agg={};
+      let tot=0;
+      list.forEach(function(x){
+        const m=modelOf(x);
+        agg[m]=(agg[m]||0)+x.qty;
+        tot+=(x.total||0);
       });
+      grand+=tot;
+      const models=Object.keys(agg).sort(function(a,b){return a.toLowerCase()<b.toLowerCase()?-1:(a.toLowerCase()>b.toLowerCase()?1:0)});
+      let b=n+'\n';
+      models.forEach(function(m){b+=' * '+m+(agg[m]>1?' ('+agg[m]+')':'')+'\n'});
+      b+=' * الإجمالي: '+fmt(tot)+' ج.م';
+      blocks.push(b);
+    });
+    if(!blocks.length){
+      msg='⚠️ لم يتم تسجيل أي مبيعات اليوم';
+    } else {
+      msg=blocks.join('\n')+'\n\nتوتال الفرع: '+fmt(grand)+' ج.م';
     }
-
-    msg+=sellerBreakdownMsg(todaySales,null);
-    if(qty===0)msg+=`\n⚠️ لم يتم تسجيل أي مبيعات اليوم\n`;
-    msg+=`\n_تم التصدير من نظام Mienta Inventory_`;
 
   } else {
     // Monthly
