@@ -553,17 +553,23 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
     <div class="field"><label>كود المنتج</label><input class="fi" type="number" id="apCode" placeholder="مثال: 123456" inputmode="numeric"></div>
     <div class="field"><label>اسم المنتج</label><input class="fi" type="text" id="apDesc" placeholder="مثال: MIENTA KETTLE 1.7L"></div>
     <div class="field"><label>الفئة</label>
-      <select class="fi" id="apCat">
-        <option value="">— اختار —</option>
-        <option>Air Fryer</option><option>Blender</option><option>Hand Blender</option><option>Kitchen Machine</option>
-        <option>Hand Mixer</option><option>Food Processor</option><option>Coffee Maker</option><option>Coffee Grinder</option>
-        <option>Kettle</option><option>Steam Iron</option><option>Steamer</option><option>Air Cooler</option>
-        <option>Fan</option><option>Juicer</option><option>Chopper</option><option>Grill</option>
-        <option>Sandwich Maker</option><option>Hot Plate</option><option>Microwave</option><option>Vacuum Cleaner</option><option>Other</option>
-      </select>
+      <select class="fi" id="apCat"></select>
     </div>
     <div class="field"><label>الكمية الأولية</label><input class="fi" type="number" id="apQty" value="0" min="0" inputmode="numeric"></div>
     <div class="btn-row"><button class="btn btn-s" onclick="closeOv('addProdModal')">إلغاء</button><button class="btn btn-p" onclick="saveNewProd()">✓ إضافة</button></div>
+  </div>
+</div>
+
+<div class="ov" id="catModal" onclick="closeOv('catModal',event)">
+  <div class="mc" style="max-height:85vh;overflow-y:auto">
+    <div class="mhandle"></div>
+    <div style="font-size:16px;font-weight:900;margin-bottom:6px">⚙️ إدارة الفئات</div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:14px">لنقل موديل لفئة تانية: افتح الموديل واختار الفئة من القائمة.</div>
+    <div class="field"><label>➕ فئة جديدة</label>
+      <div style="display:flex;gap:8px"><input class="fi" id="catNewIcon" style="width:64px;text-align:center" value="📦" maxlength="4"><input class="fi" id="catNewName" placeholder="اسم الفئة" style="flex:1"><button class="btn btn-p" style="width:auto;padding:0 16px" onclick="createCategoryFromModal()">إضافة</button></div>
+    </div>
+    <div id="catMgrList"></div>
+    <div class="btn-row" style="margin-top:12px"><button class="btn btn-s" onclick="closeOv('catModal')">إغلاق</button></div>
   </div>
 </div>
 
@@ -683,13 +689,36 @@ const MICONS=['❄️','💝','🌸','🌼','☀️','🏖️','🔥','🌊','�
 const MCOLORS=['#c8ff00','#2ecc71','#0a84ff','#ff9f0a','#ff453a','#bf5af2'];
 
 function getCat(d){const u=d.toUpperCase();for(const[c,{kw}]of Object.entries(CAT_MAP)){if(kw.some(k=>u.includes(k)))return c}return 'Other'}
-function getIcon(cat){return (CAT_MAP[cat]&&CAT_MAP[cat].icon)||'📦'}
+function getCustomCats(){return JSON.parse(localStorage.getItem('mcat_custom')||'[]')}
+function getCatOver(){return JSON.parse(localStorage.getItem('mcat_over')||'{}')}
+function saveCatData(over,custom){
+  if(over)localStorage.setItem('mcat_over',JSON.stringify(over));
+  if(custom)localStorage.setItem('mcat_custom',JSON.stringify(custom));
+  if(typeof schedulSync==='function')schedulSync();
+}
+function getIcon(cat){
+  if(CAT_MAP[cat])return CAT_MAP[cat].icon;
+  const c=getCustomCats().find(function(x){return x.name===cat&&!x.del});
+  return (c&&c.icon)||'📦';
+}
+function allCatNames(){
+  const names=Object.keys(CAT_MAP);
+  getCustomCats().forEach(function(c){if(!c.del&&names.indexOf(c.name)<0)names.push(c.name)});
+  return names;
+}
+function catOptionsHtml(selected){
+  const names=allCatNames().concat(['Other']);
+  return names.map(function(c){return '<option value="'+c+'"'+(c===selected?' selected':'')+'>'+getIcon(c)+' '+c+'</option>'}).join('');
+}
 
 function buildProds(){
   const saved=JSON.parse(localStorage.getItem('mq')||'{}');
   const custom=JSON.parse(localStorage.getItem('mc')||'[]');
-  const base=PRODS_RAW.map(([code,desc,qty])=>({code,desc,qty:saved[code]!==undefined?saved[code]:qty,origQty:qty,cat:getCat(desc),icon:getIcon(getCat(desc))}));
-  const customProds=custom.map(c=>({code:c.code,desc:c.desc,qty:saved[c.code]!==undefined?saved[c.code]:c.qty,origQty:c.qty,cat:c.cat,icon:getIcon(c.cat),custom:true}));
+  const over=getCatOver();
+  const valid=function(c){return c==='Other'||allCatNames().indexOf(c)>=0};
+  const pickCat=function(code,auto){const o=over[code];return (o&&valid(o))?o:auto};
+  const base=PRODS_RAW.map(([code,desc,qty])=>{const ct=pickCat(code,getCat(desc));return {code,desc,qty:saved[code]!==undefined?saved[code]:qty,origQty:qty,cat:ct,icon:getIcon(ct)}});
+  const customProds=custom.map(c=>{const ct=pickCat(c.code,c.cat);return {code:c.code,desc:c.desc,qty:saved[c.code]!==undefined?saved[c.code]:c.qty,origQty:c.qty,cat:ct,icon:getIcon(ct),custom:true}});
   return [...base,...customProds.filter(c=>!base.find(b=>b.code===c.code))];
 }
 
@@ -712,6 +741,8 @@ function showSyncStatus(s){
 function getAllData(){
   return {
     flags:JSON.parse(localStorage.getItem('mflags')||'{}'),
+    catOver:JSON.parse(localStorage.getItem('mcat_over')||'{}'),
+    catCustom:JSON.parse(localStorage.getItem('mcat_custom')||'[]'),
     delS:JSON.parse(localStorage.getItem('md_s')||'[]'),
     delR:JSON.parse(localStorage.getItem('md_r')||'[]'),
     qty:JSON.parse(localStorage.getItem('mq')||'{}'),
@@ -727,6 +758,8 @@ function getAllData(){
 
 function applyData(d){
   if(!d)return;
+  if(d.catOver)localStorage.setItem('mcat_over',JSON.stringify(d.catOver));
+  if(d.catCustom)localStorage.setItem('mcat_custom',JSON.stringify(d.catCustom));
   if(d.delS)localStorage.setItem('md_s',JSON.stringify(d.delS.slice(-3000)));
   if(d.delR)localStorage.setItem('md_r',JSON.stringify(d.delR.slice(-3000)));
   if(d.flags){const lf=JSON.parse(localStorage.getItem('mflags')||'{}');localStorage.setItem('mflags',JSON.stringify(Object.assign({},lf,d.flags)))}
@@ -784,6 +817,8 @@ function mergeData(local,remote,baseQty){
     counter:String(Math.max(parseInt(local.counter||'0'),parseInt(remote.counter||'0'))),
     targets:targets,
     flags:Object.assign({},remote.flags||{},local.flags||{}),
+    catOver:Object.assign({},remote.catOver||{},local.catOver||{}),
+    catCustom:(function(){const l=(remote.catCustom||[]).slice();(local.catCustom||[]).forEach(function(c){const i=l.findIndex(function(x){return x.name===c.name});if(i>=0)l[i]=c;else l.push(c)});return l})(),
     delS:delS,delR:delR
   };
 }
@@ -978,9 +1013,11 @@ function getFiltered(){
 }
 
 function renderCats(){
-  const cats=['الكل',...Object.keys(CAT_MAP).filter(c=>products.some(p=>p.cat===c))];
+  const cats=['الكل'].concat(allCatNames().filter(function(c){return products.some(function(p){return p.cat===c})||getCustomCats().some(function(x){return x.name===c&&!x.del})}));
+  if(products.some(function(p){return p.cat==='Other'}))cats.push('Other');
   const el=document.getElementById('catTabs');el.innerHTML='';
   cats.forEach(c=>{const b=document.createElement('button');b.className='cat'+(c===curCat?' on':'');b.textContent=(c==='الكل'?'📋 ':getIcon(c)+' ')+c;b.onclick=()=>{curCat=c;renderCats();renderProds()};el.appendChild(b)});
+  const mb=document.createElement('button');mb.className='cat';mb.textContent='⚙️ الفئات';mb.onclick=openCatManager;el.appendChild(mb);
 }
 
 function renderProds(){
@@ -1007,13 +1044,89 @@ function openDetail(code){
   const lastCounts=JSON.parse(localStorage.getItem('mq_counts')||'{}');
   const lastDate=lastCounts[p.code];
   const lastLbl=lastDate?formatLastCounted(lastDate):'لم يُجرد من قبل';
-  document.getElementById('detailContent').innerHTML=`<div class="mhandle"></div><div style="font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">#${p.code} · ${p.cat}</div><div style="font-size:16px;font-weight:900;margin-bottom:14px">${p.desc}</div><div style="display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px 18px;margin-bottom:12px"><div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">الكمية الحالية</div><div id="dtqd" style="font-size:46px;font-weight:900;color:var(--acc);line-height:1">${p.qty}</div></div><div class="qctrl"><button class="qbtn m" onclick="dtChg(-1)">−</button><input class="qinp" id="dtqi" type="number" value="${p.qty}" min="0" inputmode="numeric" oninput="dtInp(this.value)"><button class="qbtn p" onclick="dtChg(1)">+</button></div></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:10px;height:10px;border-radius:50%;background:${sc};flex-shrink:0"></div><div style="font-size:13px;font-weight:700;color:${sc}">${st}</div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:8px;font-size:12px;color:var(--txt2)">الكمية الأصلية: <strong style="color:var(--txt)">${p.origQty} قطعة</strong></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--txt2)">🕓 ${lastLbl}</div><div class="btn-row"><button class="btn btn-s" onclick="closeOv('detailModal')">إلغاء</button><button class="btn btn-p" onclick="saveDetail(${code})">💾 حفظ</button></div>`;
+  document.getElementById('detailContent').innerHTML=`<div class="mhandle"></div><div style="font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">#${p.code} · ${p.cat}</div><div style="font-size:16px;font-weight:900;margin-bottom:14px">${p.desc}</div><div style="display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px 18px;margin-bottom:12px"><div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">الكمية الحالية</div><div id="dtqd" style="font-size:46px;font-weight:900;color:var(--acc);line-height:1">${p.qty}</div></div><div class="qctrl"><button class="qbtn m" onclick="dtChg(-1)">−</button><input class="qinp" id="dtqi" type="number" value="${p.qty}" min="0" inputmode="numeric" oninput="dtInp(this.value)"><button class="qbtn p" onclick="dtChg(1)">+</button></div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">📂 الفئة</div><select class="fi" id="dtCatSel" onchange="changeProdCat(${code},this.value)">${catOptionsHtml(p.cat)}<option value="__auto__">↩️ تلقائي (حسب الاسم)</option><option value="__new__">➕ فئة جديدة...</option></select></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:10px;height:10px;border-radius:50%;background:${sc};flex-shrink:0"></div><div style="font-size:13px;font-weight:700;color:${sc}">${st}</div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:8px;font-size:12px;color:var(--txt2)">الكمية الأصلية: <strong style="color:var(--txt)">${p.origQty} قطعة</strong></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--txt2)">🕓 ${lastLbl}</div><div class="btn-row"><button class="btn btn-s" onclick="closeOv('detailModal')">إلغاء</button><button class="btn btn-p" onclick="saveDetail(${code})">💾 حفظ</button></div>`;
   window._dq={code,qty:p.qty};
   document.getElementById('detailModal').classList.add('on');
 }
 function dtChg(d){const eq=window._dq;eq.qty=Math.max(0,eq.qty+d);document.getElementById('dtqi').value=eq.qty;document.getElementById('dtqd').textContent=eq.qty}
 function dtInp(v){window._dq.qty=Math.max(0,parseInt(v)||0);document.getElementById('dtqd').textContent=window._dq.qty}
 function saveDetail(code){const p=products.find(x=>x.code===code);if(!p)return;p.qty=window._dq.qty;saveQty();markCountedToday([code]);closeOv('detailModal');renderProds();renderLow();toast('✅ تم تحديث الكمية!')}
+
+
+// ===== CATEGORY MANAGEMENT =====
+function addCustomCategory(name,icon){
+  name=(name||'').trim();
+  if(!name)return false;
+  if(Object.keys(CAT_MAP).indexOf(name)>=0||name==='Other'){return true}
+  const list=getCustomCats();
+  const e=list.find(function(x){return x.name===name});
+  if(e){e.del=false;e.icon=icon||e.icon}else{list.push({name:name,icon:icon||'📦'})}
+  saveCatData(null,list);
+  return true;
+}
+function setProdCat(code,cat){
+  const over=getCatOver();
+  if(cat==='__auto__'||!cat)over[code]='';else over[code]=cat;
+  saveCatData(over,null);
+  products=buildProds();
+}
+function changeProdCat(code,val){
+  if(val==='__new__'){
+    const n=prompt('اسم الفئة الجديدة:','');
+    if(!n||!n.trim()){openDetail(code);return}
+    const ic=prompt('أيقونة للفئة (إيموجي، اختياري):','📦')||'📦';
+    addCustomCategory(n,ic);
+    val=n.trim();
+  }
+  setProdCat(code,val);
+  const p=products.find(function(x){return x.code===code});
+  if(curCat!=='الكل'&&allCatNames().indexOf(curCat)<0&&curCat!=='Other')curCat='الكل';
+  renderCats();renderProds();
+  if(typeof renderStocktakeCats==='function'){try{renderStocktakeCats()}catch(e){}}
+  openDetail(code);
+  toast('✅ اتنقل لفئة '+(p?p.cat:val));
+}
+function openCatManager(){
+  renderCatManager();
+  document.getElementById('catModal').classList.add('on');
+}
+function renderCatManager(){
+  const el=document.getElementById('catMgrList');if(!el)return;
+  const custom=getCustomCats().filter(function(c){return !c.del});
+  let html='';
+  Object.keys(CAT_MAP).concat(['Other']).forEach(function(c){
+    const n=products.filter(function(p){return p.cat===c}).length;
+    html+='<div class="tx"><div class="tx-ic">'+getIcon(c)+'</div><div class="tx-inf"><div class="tx-nm">'+c+'</div><div class="tx-sb">'+n+' صنف</div></div></div>';
+  });
+  custom.forEach(function(c){
+    const n=products.filter(function(p){return p.cat===c.name}).length;
+    html+='<div class="tx"><div class="tx-ic">'+(c.icon||'📦')+'</div><div class="tx-inf"><div class="tx-nm">'+c.name+' <span style="font-size:10px;color:var(--acc)">(من عندك)</span></div><div class="tx-sb">'+n+' صنف</div></div>'+
+      '<button class="btn btn-s" style="width:auto;padding:5px 10px;font-size:11px" onclick="deleteCustomCategory(\''+c.name.replace(/'/g,"")+'\')">🗑️</button></div>';
+  });
+  el.innerHTML=html;
+}
+function createCategoryFromModal(){
+  const n=document.getElementById('catNewName').value;
+  const ic=document.getElementById('catNewIcon').value||'📦';
+  if(!n.trim()){toast('⚠️ اكتب اسم الفئة');return}
+  addCustomCategory(n,ic);
+  document.getElementById('catNewName').value='';
+  products=buildProds();
+  renderCatManager();renderCats();
+  toast('✅ تمت إضافة الفئة');
+}
+function deleteCustomCategory(name){
+  const list=getCustomCats();
+  const e=list.find(function(x){return x.name===name});
+  if(e){e.del=true}
+  const over=getCatOver();
+  Object.keys(over).forEach(function(k){if(over[k]===name)over[k]=''});
+  saveCatData(over,list);
+  products=buildProds();
+  if(curCat===name)curCat='الكل';
+  renderCatManager();renderCats();renderProds();
+  toast('🗑️ تم حذف الفئة ورجعت أصنافها لفئتها التلقائية');
+}
 
 // QUICK SALE
 function openQS(code){
@@ -1460,7 +1573,8 @@ function renderLow(){
 let stCat='الكل';
 
 function renderStocktakeCats(){
-  const cats=['الكل',...Object.keys(CAT_MAP).filter(c=>products.some(p=>p.cat===c))];
+  const cats=['الكل'].concat(allCatNames().filter(function(c){return products.some(function(p){return p.cat===c})}));
+  if(products.some(function(p){return p.cat==='Other'}))cats.push('Other');
   const el=document.getElementById('stCatTabs');if(!el)return;el.innerHTML='';
   cats.forEach(c=>{
     const b=document.createElement('button');b.className='cat'+(c===stCat?' on':'');
@@ -1573,7 +1687,8 @@ function markCountedToday(codes){
 }
 
 // ADD PRODUCT
-function openAddProd(){document.getElementById('apCode').value='';document.getElementById('apDesc').value='';document.getElementById('apCat').value='';document.getElementById('apQty').value='0';document.getElementById('addProdModal').classList.add('on')}
+function openAddProd(){openAddProdFill();document.getElementById('apCode').value='';document.getElementById('apDesc').value='';document.getElementById('apCat').value='';document.getElementById('apQty').value='0';document.getElementById('addProdModal').classList.add('on')}
+function openAddProdFill(){const sel=document.getElementById('apCat');if(sel)sel.innerHTML='<option value="">— اختار —</option>'+catOptionsHtml('')}
 function saveNewProd(){
   const code=parseInt(document.getElementById('apCode').value);
   const desc=document.getElementById('apDesc').value.trim().toUpperCase();
@@ -1894,7 +2009,7 @@ function showStockUpdatePreview(changes,errors){
     const hdr=document.createElement('div');hdr.style.cssText='font-size:11px;color:var(--acc);font-weight:700;text-align:center;padding:10px 0 8px;text-transform:uppercase;letter-spacing:1px';
     hdr.textContent='✨ أصناف جديدة — اختار الفئة لكل واحد';list.appendChild(hdr);
 
-    const catOptions=Object.keys(CAT_MAP).map(c=>'<option value="'+c+'">'+getIcon(c)+' '+c+'</option>').join('')+'<option value="Other">📦 Other</option>';
+    const catOptions=catOptionsHtml('');
 
     newItems.forEach((c,idx)=>{
       const guessedCat=getCat(c.desc); // auto-guess from description
@@ -1907,7 +2022,7 @@ function showStockUpdatePreview(changes,errors){
           '<select class="fi" style="font-size:12px;padding:7px 10px" data-newitem-idx="'+idx+'">'+catOptions+'</select>'+
         '</div>';
       const sel=row.querySelector('select');
-      if(!CAT_MAP[guessedCat])sel.value='Other';else sel.value=guessedCat;
+      sel.value=(allCatNames().indexOf(guessedCat)<0)?'Other':guessedCat;
       list.appendChild(row);
     });
   }
