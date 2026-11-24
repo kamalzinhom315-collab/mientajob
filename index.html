@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<meta name="theme-color" content="#080810">
+<meta name="theme-color" content="#faf7f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mienta">
@@ -15,8 +15,8 @@
   &quot;description&quot;:&quot;نظام إدارة مخزون ميانتا&quot;,
   &quot;start_url&quot;:&quot;.&quot;,
   &quot;display&quot;:&quot;standalone&quot;,
-  &quot;background_color&quot;:&quot;#080810&quot;,
-  &quot;theme_color&quot;:&quot;#080810&quot;,
+  &quot;background_color&quot;:&quot;#faf7f0&quot;,
+  &quot;theme_color&quot;:&quot;#faf7f0&quot;,
   &quot;orientation&quot;:&quot;portrait&quot;,
   &quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23080810'/><text y='.9em' font-size='80' x='10'>🏭</text></svg>&quot;,&quot;sizes&quot;:&quot;any&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]
 }">
@@ -24,17 +24,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-:root{--bg:#080810;--s:#0f0f1a;--s2:#181824;--s3:#20202e;--b:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.11);--b3:rgba(255,255,255,0.18);--acc:#e8b923;--acc-d:rgba(232,185,35,0.12);--acc-b:rgba(232,185,35,0.3);--red:#ff453a;--red-d:rgba(255,69,58,0.12);--red-b:rgba(255,69,58,0.3);--grn:#2ecc71;--grn-d:rgba(46,204,113,0.1);--grn-b:rgba(46,204,113,0.3);--org:#ff9f0a;--org-d:rgba(255,159,10,0.1);--org-b:rgba(255,159,10,0.3);--txt:#eeeef5;--txt2:#9999b0;--muted:#50506a;--r:14px;--r2:10px}
+:root{--bg:#faf7f0;--s:#ffffff;--s2:#f5f0e3;--s3:#ece4d2;--b:#ece4d2;--b2:#e0d6bf;--b3:#cfc3a6;--acc:#e8b923;--acc-d:rgba(232,185,35,0.16);--acc-b:rgba(200,150,10,0.45);--accx:#8a6500;--red:#d92d20;--red-d:rgba(217,45,32,0.09);--red-b:rgba(217,45,32,0.3);--grn:#067647;--grn-d:rgba(6,118,71,0.09);--grn-b:rgba(6,118,71,0.3);--org:#c2650a;--org-d:rgba(194,101,10,0.1);--org-b:rgba(194,101,10,0.3);--txt:#1f1b14;--txt2:#6b6252;--muted:#8a8171;--r:16px;--r2:12px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;max-width:500px;margin:0 auto;padding-bottom:90px}
 .hdr{background:var(--s);border-bottom:1px solid var(--b);padding:14px 18px 12px;position:sticky;top:0;z-index:100}
 .hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand-logo{width:34px;height:34px;background:var(--acc);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
-.brand-name{font-size:18px;font-weight:900}.brand-name span{color:var(--acc)}
+.brand-name{font-size:18px;font-weight:900}.brand-name span{color:var(--accx)}
 .hdr-stats{display:flex;gap:6px}
 .chip{background:var(--s2);border:1px solid var(--b2);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:700;color:var(--txt2)}
-.chip.acc{background:var(--acc-d);border-color:var(--acc-b);color:var(--acc)}
+.chip.acc{background:var(--acc-d);border-color:var(--acc-b);color:var(--accx)}
 .search-sort{display:flex;gap:8px;align-items:center}
 .sw{position:relative;flex:1}
 .si{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--muted)}
@@ -42,11 +42,11 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--txt);min-he
 .sinp:focus{border-color:var(--acc-b)}.sinp::placeholder{color:var(--muted)}
 .scan-btn{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:8px 11px;font-size:17px;cursor:pointer}
 .sort-btn{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:10px 12px;font-size:12px;font-weight:700;color:var(--txt2);cursor:pointer;white-space:nowrap;font-family:'Cairo',sans-serif;flex-shrink:0}
-.sort-btn.on{background:var(--acc-d);border-color:var(--acc-b);color:var(--acc)}
+.sort-btn.on{background:var(--acc-d);border-color:var(--acc-b);color:var(--accx)}
 .nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:var(--s);border-top:1px solid var(--b);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom)}
 .nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px 11px;background:none;border:none;cursor:pointer;font-family:'Cairo',sans-serif;position:relative}
 .nb-i{font-size:17px}.nb-l{font-size:8px;font-weight:700;color:var(--muted)}
-.nb.on .nb-l{color:var(--acc)}
+.nb.on .nb-l{color:var(--accx)}
 .nb.on::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;background:var(--acc);border-radius:2px 2px 0 0}
 .pg{display:none;padding:16px}.pg.on{display:block}
 .lbl{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin:16px 0 10px}
@@ -65,15 +65,15 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--txt);min-he
 .pcard.zero{border-color:var(--red-b);background:var(--red-d)}
 .pic{width:42px;height:42px;border-radius:11px;background:var(--s2);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .pinf{flex:1;min-width:0}
-.pcode{font-size:13px;font-weight:900;color:var(--acc);letter-spacing:1px;margin-bottom:4px}
+.pcode{font-size:13px;font-weight:900;color:var(--accx);letter-spacing:1px;margin-bottom:4px}
 .pname{font-size:15px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pcat{font-size:11px;color:var(--txt2);margin-top:3px}
 .pright{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
-.qnum{font-size:26px;font-weight:900;color:var(--acc);line-height:1}
+.qnum{font-size:26px;font-weight:900;color:var(--accx);line-height:1}
 .qlbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
 .pcard.low .qnum{color:var(--org)}.pcard.zero .qnum{color:var(--red)}
 .qsb{background:var(--grn-d);border:1px solid var(--grn-b);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--grn);cursor:pointer;font-family:'Cairo',sans-serif}
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:600;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.ov{position:fixed;inset:0;background:rgba(31,27,20,.55);z-index:600;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
 .ov.on{opacity:1;pointer-events:all}
 .mc{background:var(--s);border:1px solid var(--b2);border-radius:22px 22px 0 0;padding:22px 20px;width:100%;max-width:500px;transform:translateY(30px);transition:transform .3s;max-height:90vh;overflow-y:auto}
 .ov.on .mc{transform:translateY(0)}
@@ -113,10 +113,10 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 .tx-sb{font-size:11px;color:var(--txt2);margin-top:2px}
 .tx-q{font-size:20px;font-weight:900;flex-shrink:0}
 .tx-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px;flex-shrink:0}
-.cbadge{background:var(--acc-d);border:1px solid var(--acc-b);border-radius:5px;padding:1px 6px;color:var(--acc);font-weight:700;font-size:10px;margin-left:4px}
+.cbadge{background:var(--acc-d);border:1px solid var(--acc-b);border-radius:5px;padding:1px 6px;color:var(--accx);font-weight:700;font-size:10px;margin-left:4px}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .stat-c{background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:14px;text-align:center}
-.stat-c .sv{font-size:28px;font-weight:900;color:var(--acc);line-height:1;margin-bottom:4px}
+.stat-c .sv{font-size:28px;font-weight:900;color:var(--accx);line-height:1;margin-bottom:4px}
 .stat-c .sl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px}
 .bar-bg{background:var(--s2);border-radius:20px;height:5px;overflow:hidden;margin-top:5px}
 .bar-fill{height:100%;border-radius:20px;transition:width .6s ease}
@@ -138,14 +138,14 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 .scan-ov.on{opacity:1;pointer-events:all}
 .scan-video{width:100%;max-width:500px;height:65vh;object-fit:cover}
 .scan-frame{position:absolute;width:220px;height:220px;border:3px solid var(--acc);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.55)}
-.scan-lbl{position:absolute;bottom:120px;color:var(--txt);font-size:14px;font-weight:700;text-align:center;padding:10px 20px;background:rgba(0,0,0,.6);border-radius:20px}
-.scan-close{position:absolute;top:20px;right:20px;background:rgba(0,0,0,.6);border:1px solid var(--b2);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:var(--txt)}
+.scan-lbl{position:absolute;bottom:120px;color:#fff;font-size:14px;font-weight:700;text-align:center;padding:10px 20px;background:rgba(31,27,20,.7);border-radius:20px}
+.scan-close{position:absolute;top:20px;right:20px;background:rgba(31,27,20,.7);border:1px solid var(--b2);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff}
 .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
 .empty .ic{font-size:40px;display:block;margin-bottom:10px}
 .toast{position:fixed;bottom:98px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s2);color:var(--txt);border:1px solid var(--b2);padding:12px 20px;border-radius:30px;font-weight:700;font-size:13px;opacity:0;transition:all .3s;z-index:999;white-space:nowrap;font-family:'Cairo',sans-serif}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 /* PWA INSTALL BANNER */
-.pwa-banner{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(100px);width:calc(100% - 32px);max-width:468px;background:var(--s);border:1px solid var(--acc-b);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:300;transition:transform .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.pwa-banner{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(100px);width:calc(100% - 32px);max-width:468px;background:var(--s);border:1px solid var(--acc-b);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:300;transition:transform .4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 28px rgba(31,27,20,.15)}
 .pwa-banner.show{transform:translateX(-50%) translateY(0)}
 .pwa-banner-icon{font-size:28px;flex-shrink:0}
 .pwa-banner-txt{flex:1}
@@ -155,14 +155,14 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 .pwa-close-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0}
 
 /* FAB */
-.fab{position:fixed;bottom:78px;left:18px;width:54px;height:54px;border-radius:50%;background:var(--acc);color:#000;border:none;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:250;box-shadow:0 6px 20px rgba(200,255,0,.35);transition:transform .2s}
+.fab{position:fixed;bottom:78px;left:18px;width:54px;height:54px;border-radius:50%;background:var(--acc);color:#000;border:none;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:250;box-shadow:0 6px 18px rgba(200,150,10,.35);transition:transform .2s}
 .fab:active{transform:scale(.92)}
 .fab-menu{position:fixed;bottom:140px;left:18px;display:flex;flex-direction:column;gap:10px;z-index:250;opacity:0;pointer-events:none;transform:translateY(10px);transition:all .25s}
 .fab-menu.open{opacity:1;pointer-events:all;transform:translateY(0)}
-.fab-item{display:flex;align-items:center;gap:10px;background:var(--s);border:1px solid var(--b2);border-radius:30px;padding:10px 16px 10px 10px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.fab-item{display:flex;align-items:center;gap:10px;background:var(--s);border:1px solid var(--b2);border-radius:30px;padding:10px 16px 10px 10px;cursor:pointer;box-shadow:0 4px 14px rgba(31,27,20,.12)}
 .fab-item .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .fab-item .lb{font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap}
-.fab-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:240;opacity:0;pointer-events:none;transition:opacity .25s}
+.fab-backdrop{position:fixed;inset:0;background:rgba(31,27,20,.35);z-index:240;opacity:0;pointer-events:none;transition:opacity .25s}
 .fab-backdrop.open{opacity:1;pointer-events:all}
 
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -203,7 +203,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
       <div class="sl" id="dashSalesLbl">💰 مبيعات الشهر</div>
     </div>
     <div class="stat-c" style="border-color:var(--acc-b)">
-      <div class="sv" style="color:var(--acc)" id="dashTodayRevenue">0</div>
+      <div class="sv" style="color:var(--accx)" id="dashTodayRevenue">0</div>
       <div class="sl" id="dashRevLbl">💵 إيراد الشهر</div>
     </div>
   </div>
@@ -211,10 +211,10 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <!-- Commission card -->
   <div class="stat-c" style="border-color:var(--acc-b);background:var(--acc-d);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;text-align:right;padding:14px 16px">
     <div>
-      <div style="font-size:11px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">🎯 عمولتك (1.25%)</div>
+      <div style="font-size:11px;color:var(--accx);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">🎯 عمولتك (1.25%)</div>
       <div style="font-size:10px;color:var(--muted)" id="dashCommLbl">من إجمالي مبيعات الشهر</div>
     </div>
-    <div style="font-size:28px;font-weight:900;color:var(--acc)" id="dashCommission">0 ج</div>
+    <div style="font-size:28px;font-weight:900;color:var(--accx)" id="dashCommission">0 ج</div>
   </div>
 
   <!-- Target/Goal card -->
@@ -298,7 +298,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
       <div style="font-size:18px;font-weight:900">💰 المبيعات</div>
       <div style="font-size:12px;color:var(--txt2);margin-top:2px">
         إجمالي: <span id="totalSalesCount" style="color:var(--grn);font-weight:900">0</span> قطعة
-        · <span id="totalRevenue" style="color:var(--acc);font-weight:900">0</span> ج
+        · <span id="totalRevenue" style="color:var(--accx);font-weight:900">0</span> ج
       </div>
     </div>
     <button class="btn btn-p" style="width:auto;padding:10px 16px;font-size:13px" onclick="openSaleModal()">+ تسجيل بيع</button>
@@ -358,7 +358,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
   <!-- Sort indicator -->
   <div id="stSortInfo" style="font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px">
-    <span>⇅ الترتيب الحالي:</span><span id="stSortLabel" style="color:var(--acc);font-weight:700">افتراضي</span>
+    <span>⇅ الترتيب الحالي:</span><span id="stSortLabel" style="color:var(--accx);font-weight:700">افتراضي</span>
     <span style="margin-right:auto"><a onclick="sw('inv',document.querySelector('.nb'))" style="color:var(--txt2);font-size:11px;cursor:pointer;text-decoration:underline">غيّر الترتيب من المخزون ←</a></span>
   </div>
 
@@ -367,7 +367,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
   <div class="st-banner">
     <div>
-      <div style="font-size:12px;font-weight:700;color:var(--acc)">⚡ وضع الجرد</div>
+      <div style="font-size:12px;font-weight:700;color:var(--accx)">⚡ وضع الجرد</div>
       <div style="font-size:11px;color:var(--txt2);margin-top:2px" id="stCount">لم تتغير أي كمية بعد</div>
     </div>
     <div style="display:flex;gap:6px;flex-shrink:0">
@@ -392,7 +392,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
   <!-- Cloud connection verification -->
   <div style="background:var(--s);border:1px solid var(--acc-b);border-radius:var(--r);padding:16px;margin-bottom:10px">
-    <div style="font-size:10px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">☁️ حالة الاتصال بالسحابة</div>
+    <div style="font-size:10px;color:var(--accx);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">☁️ حالة الاتصال بالسحابة</div>
     <div id="cloudStatusBox" style="font-size:13px;color:var(--txt2);margin-bottom:12px">جاري الفحص...</div>
     <button class="btn btn-p" onclick="verifyCloudConnection()">🔍 تحقق من الاتصال الآن</button>
     <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6">💡 بياناتك محفوظة على سيرفر Supabase منفصل تماماً عن اللينك اللي بتفتح بيه التطبيق. حتى لو اللينك اتقفل أو ضاع، البيانات تفضل موجودة على السيرفر وتقدر توصلها من أي لينك جديد بنفس بيانات الاتصال.</div>
@@ -403,7 +403,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
   <!-- Update Stock from Excel -->
   <div style="background:var(--s);border:1px solid var(--acc-b);border-radius:var(--r);padding:16px;margin-bottom:10px">
-    <div style="font-size:10px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">⚡ تحديث المخزون من Excel</div>
+    <div style="font-size:10px;color:var(--accx);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">⚡ تحديث المخزون من Excel</div>
     <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">رفع ملف Excel فيه أعمدة (Item, DESC, الكمية) — وهيستبدل كميات المخزون بالكامل بالأرقام الجديدة</div>
     <button class="btn btn-p" onclick="document.getElementById('stockFile').click()">📥 رفع ملف Excel</button>
     <input type="file" id="stockFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="updateStockFromExcel(this)">
@@ -422,7 +422,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
   <!-- Full Excel -->
   <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:16px;margin-bottom:10px">
-    <div style="font-size:10px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">📋 تصدير كامل</div>
+    <div style="font-size:10px;color:var(--accx);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">📋 تصدير كامل</div>
     <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">كل البيانات — المخزون والمبيعات والمرتجعات</div>
     <button class="btn btn-p" onclick="exportFullExcel()">⬇️ تحميل Excel الكامل</button>
   </div>
@@ -441,7 +441,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <!-- Seller Names Settings -->
   <div style="background:var(--s);border:1px solid var(--b2);border-radius:var(--r);padding:16px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:10px;color:var(--acc);font-weight:700;text-transform:uppercase;letter-spacing:2px">👥 البائعين</div>
+      <div style="font-size:10px;color:var(--accx);font-weight:700;text-transform:uppercase;letter-spacing:2px">👥 البائعين</div>
       <button class="btn btn-p" style="width:auto;padding:6px 12px;font-size:12px" onclick="addSeller()">+ إضافة بائع</button>
     </div>
     <div id="sellersList"></div>
@@ -481,7 +481,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
       </div>
       <div style="text-align:center;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:12px 16px">
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px">يتبقى</div>
-        <div style="font-size:28px;font-weight:900;color:var(--acc)" id="qsRemain">0</div>
+        <div style="font-size:28px;font-weight:900;color:var(--accx)" id="qsRemain">0</div>
       </div>
     </div>
     <div class="field"><label>البائع</label>
@@ -619,7 +619,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 <div class="fab-menu" id="fabMenu">
   <div class="fab-item" onclick="fabAction('sale')"><div class="ic" style="background:var(--grn-d);color:var(--grn)">💰</div><div class="lb">تسجيل بيع</div></div>
   <div class="fab-item" onclick="fabAction('return')"><div class="ic" style="background:var(--org-d);color:var(--org)">↩️</div><div class="lb">تسجيل مرتجع</div></div>
-  <div class="fab-item" onclick="fabAction('scan')"><div class="ic" style="background:var(--acc-d);color:var(--acc)">📷</div><div class="lb">مسح باركود</div></div>
+  <div class="fab-item" onclick="fabAction('scan')"><div class="ic" style="background:var(--acc-d);color:var(--accx)">📷</div><div class="lb">مسح باركود</div></div>
   <div class="fab-item" onclick="fabAction('add')"><div class="ic" style="background:var(--s2);color:var(--txt)">➕</div><div class="lb">إضافة منتج</div></div>
 </div>
 <button class="fab" id="fabBtn" onclick="toggleFab()">+</button>
@@ -1044,7 +1044,7 @@ function openDetail(code){
   const lastCounts=JSON.parse(localStorage.getItem('mq_counts')||'{}');
   const lastDate=lastCounts[p.code];
   const lastLbl=lastDate?formatLastCounted(lastDate):'لم يُجرد من قبل';
-  document.getElementById('detailContent').innerHTML=`<div class="mhandle"></div><div style="font-size:10px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">#${p.code} · ${p.cat}</div><div style="font-size:16px;font-weight:900;margin-bottom:14px">${p.desc}</div><div style="display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px 18px;margin-bottom:12px"><div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">الكمية الحالية</div><div id="dtqd" style="font-size:46px;font-weight:900;color:var(--acc);line-height:1">${p.qty}</div></div><div class="qctrl"><button class="qbtn m" onclick="dtChg(-1)">−</button><input class="qinp" id="dtqi" type="number" value="${p.qty}" min="0" inputmode="numeric" oninput="dtInp(this.value)"><button class="qbtn p" onclick="dtChg(1)">+</button></div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">📂 الفئة</div><select class="fi" id="dtCatSel" onchange="changeProdCat(${code},this.value)">${catOptionsHtml(p.cat)}<option value="__auto__">↩️ تلقائي (حسب الاسم)</option><option value="__new__">➕ فئة جديدة...</option></select></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:10px;height:10px;border-radius:50%;background:${sc};flex-shrink:0"></div><div style="font-size:13px;font-weight:700;color:${sc}">${st}</div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:8px;font-size:12px;color:var(--txt2)">الكمية الأصلية: <strong style="color:var(--txt)">${p.origQty} قطعة</strong></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--txt2)">🕓 ${lastLbl}</div><div class="btn-row"><button class="btn btn-s" onclick="closeOv('detailModal')">إلغاء</button><button class="btn btn-p" onclick="saveDetail(${code})">💾 حفظ</button></div>`;
+  document.getElementById('detailContent').innerHTML=`<div class="mhandle"></div><div style="font-size:10px;font-weight:700;color:var(--accx);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">#${p.code} · ${p.cat}</div><div style="font-size:16px;font-weight:900;margin-bottom:14px">${p.desc}</div><div style="display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px 18px;margin-bottom:12px"><div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">الكمية الحالية</div><div id="dtqd" style="font-size:46px;font-weight:900;color:var(--accx);line-height:1">${p.qty}</div></div><div class="qctrl"><button class="qbtn m" onclick="dtChg(-1)">−</button><input class="qinp" id="dtqi" type="number" value="${p.qty}" min="0" inputmode="numeric" oninput="dtInp(this.value)"><button class="qbtn p" onclick="dtChg(1)">+</button></div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:10px 14px;margin-bottom:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">📂 الفئة</div><select class="fi" id="dtCatSel" onchange="changeProdCat(${code},this.value)">${catOptionsHtml(p.cat)}<option value="__auto__">↩️ تلقائي (حسب الاسم)</option><option value="__new__">➕ فئة جديدة...</option></select></div><div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="width:10px;height:10px;border-radius:50%;background:${sc};flex-shrink:0"></div><div style="font-size:13px;font-weight:700;color:${sc}">${st}</div></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:8px;font-size:12px;color:var(--txt2)">الكمية الأصلية: <strong style="color:var(--txt)">${p.origQty} قطعة</strong></div><div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--txt2)">🕓 ${lastLbl}</div><div class="btn-row"><button class="btn btn-s" onclick="closeOv('detailModal')">إلغاء</button><button class="btn btn-p" onclick="saveDetail(${code})">💾 حفظ</button></div>`;
   window._dq={code,qty:p.qty};
   document.getElementById('detailModal').classList.add('on');
 }
@@ -1100,7 +1100,7 @@ function renderCatManager(){
   });
   custom.forEach(function(c){
     const n=products.filter(function(p){return p.cat===c.name}).length;
-    html+='<div class="tx"><div class="tx-ic">'+(c.icon||'📦')+'</div><div class="tx-inf"><div class="tx-nm">'+c.name+' <span style="font-size:10px;color:var(--acc)">(من عندك)</span></div><div class="tx-sb">'+n+' صنف</div></div>'+
+    html+='<div class="tx"><div class="tx-ic">'+(c.icon||'📦')+'</div><div class="tx-inf"><div class="tx-nm">'+c.name+' <span style="font-size:10px;color:var(--accx)">(من عندك)</span></div><div class="tx-sb">'+n+' صنف</div></div>'+
       '<button class="btn btn-s" style="width:auto;padding:5px 10px;font-size:11px" onclick="deleteCustomCategory(\''+c.name.replace(/'/g,"")+'\')">🗑️</button></div>';
   });
   el.innerHTML=html;
@@ -1391,7 +1391,7 @@ function renderSales(){
     const pc={};items.forEach(s=>{pc[s.desc]=(pc[s.desc]||0)+s.qty});
     const top=Object.entries(pc).sort((a,b)=>b[1]-a[1])[0];
     const acc=document.createElement('div');acc.className='acc anim'+(mk===curM?' open':'');
-    const revHtml=mRev>0?'<div style="font-size:13px;font-weight:700;color:var(--acc)">'+mRev.toLocaleString('ar-EG')+' ج</div>':'';
+    const revHtml=mRev>0?'<div style="font-size:13px;font-weight:700;color:var(--accx)">'+mRev.toLocaleString('ar-EG')+' ج</div>':'';
     acc.innerHTML=`<div class="acc-h" onclick="this.closest('.acc').classList.toggle('open')"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">${MICONS[mi]}</span><div><div class="acc-title">${mk===curM?'⚡ ':''}${MNAMES[mi]} ${yr}</div><div class="acc-meta">${items.length} عملية · ${days} يوم · ${mTotal} قطعة</div></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px"><div style="font-size:22px;font-weight:900;color:var(--grn);line-height:1">${mTotal}</div><div style="font-size:9px;color:var(--muted);text-transform:uppercase">قطعة</div>${revHtml}<div class="acc-arrow">▼</div></div></div><div class="acc-body"></div>`;
     el.appendChild(acc);const body=acc.querySelector('.acc-body');
     if(top){const chip=document.createElement('div');chip.style.cssText='background:var(--grn-d);border:1px solid var(--grn-b);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center';chip.innerHTML=`<div><div style="font-size:9px;color:var(--grn);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">⭐ الأكثر مبيعاً</div><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${top[0]}</div></div><div style="font-size:20px;font-weight:900;color:var(--grn)">${top[1]}</div>`;body.appendChild(chip)}
@@ -1401,11 +1401,11 @@ function renderSales(){
       const dt=di.reduce((s,x)=>s+x.qty,0);
       const dr=di.reduce((s,x)=>s+(x.total||0),0);
       const dh=document.createElement('div');dh.style.cssText='display:flex;justify-content:space-between;padding:5px 4px;margin-bottom:4px;border-bottom:1px solid var(--b)';
-      const drHtml=dr>0?'<span style="font-size:11px;font-weight:700;color:var(--acc)">'+dr.toLocaleString('ar-EG')+' ج</span>':'';
+      const drHtml=dr>0?'<span style="font-size:11px;font-weight:700;color:var(--accx)">'+dr.toLocaleString('ar-EG')+' ج</span>':'';
       dh.innerHTML=`<span style="font-size:11px;font-weight:700;color:var(--muted)">${ds}</span><div style="display:flex;gap:8px;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--grn)">${dt} قطعة</span>${drHtml}</div>`;body.appendChild(dh);
       di.forEach(s=>{
         const r=document.createElement('div');r.className='tx';
-        const priceStr=s.price>0?`<span style="font-size:10px;color:var(--acc);font-weight:700;background:var(--acc-d);border:1px solid var(--acc-b);border-radius:5px;padding:1px 6px;margin-right:4px">${s.total?s.total.toLocaleString('ar-EG')+' ج':s.price+' ج/قطعة'}</span>`:'';
+        const priceStr=s.price>0?`<span style="font-size:10px;color:var(--accx);font-weight:700;background:var(--acc-d);border:1px solid var(--acc-b);border-radius:5px;padding:1px 6px;margin-right:4px">${s.total?s.total.toLocaleString('ar-EG')+' ج':s.price+' ج/قطعة'}</span>`:'';
         const invStr=s.inv?`<span style="font-size:10px;color:var(--txt2);font-weight:700;margin-left:4px">فاتورة #${s.inv}</span>`:'';
         const sellerPalette=['var(--acc)','var(--grn)','#0a84ff','#ff9f0a','#bf5af2','#ff453a'];
         const sellerColor=sellerPalette[((s.seller||1)-1)%sellerPalette.length];
@@ -1461,7 +1461,7 @@ function renderStats(){
   const ts=getSales().reduce((s,x)=>s+x.qty,0);
   const tr=getRets().reduce((s,x)=>s+x.qty,0);
   const rev=getSales().reduce((s,x)=>s+(x.total||0),0);
-  document.getElementById('statsGrid').innerHTML=`<div class="stat-c"><div class="sv">${products.length}</div><div class="sl">إجمالي الأصناف</div></div><div class="stat-c"><div class="sv">${tq}</div><div class="sl">إجمالي القطع</div></div><div class="stat-c" style="border-color:var(--grn-b)"><div class="sv" style="color:var(--grn)">${ts}</div><div class="sl">💰 قطع مباعة</div></div><div class="stat-c" style="border-color:var(--acc-b)"><div class="sv" style="color:var(--acc);font-size:${rev>=1000?'20px':'28px'}">${rev>0?rev.toLocaleString('ar-EG')+'<span style="font-size:14px"> ج</span>':'—'}</div><div class="sl">💵 إجمالي الإيراد</div></div><div class="stat-c" style="border-color:var(--org-b)"><div class="sv" style="color:var(--org)">${tr}</div><div class="sl">↩️ مرتجعات</div></div><div class="stat-c" style="border-color:var(--red-b)"><div class="sv" style="color:var(--red)">${z}</div><div class="sl">نفذ من المخزون</div></div>`;
+  document.getElementById('statsGrid').innerHTML=`<div class="stat-c"><div class="sv">${products.length}</div><div class="sl">إجمالي الأصناف</div></div><div class="stat-c"><div class="sv">${tq}</div><div class="sl">إجمالي القطع</div></div><div class="stat-c" style="border-color:var(--grn-b)"><div class="sv" style="color:var(--grn)">${ts}</div><div class="sl">💰 قطع مباعة</div></div><div class="stat-c" style="border-color:var(--acc-b)"><div class="sv" style="color:var(--accx);font-size:${rev>=1000?'20px':'28px'}">${rev>0?rev.toLocaleString('ar-EG')+'<span style="font-size:14px"> ج</span>':'—'}</div><div class="sl">💵 إجمالي الإيراد</div></div><div class="stat-c" style="border-color:var(--org-b)"><div class="sv" style="color:var(--org)">${tr}</div><div class="sl">↩️ مرتجعات</div></div><div class="stat-c" style="border-color:var(--red-b)"><div class="sv" style="color:var(--red)">${z}</div><div class="sl">نفذ من المخزون</div></div>`;
   // TOP 5
   const pc={};getSales().forEach(s=>{if(!pc[s.code])pc[s.code]={qty:0,desc:s.desc,icon:s.icon,cat:s.cat};pc[s.code].qty+=s.qty});
   const top5=Object.values(pc).sort((a,b)=>b.qty-a.qty).slice(0,5);
@@ -1480,7 +1480,7 @@ function renderStats(){
       top5Rev.forEach((p,i)=>{
         const ranks=['🥇','🥈','🥉','4️⃣','5️⃣'];const pct=Math.max(8,(p.rev/mxr)*100);
         const d=document.createElement('div');d.className='t5card anim';
-        d.innerHTML=`<div class="t5rank">${ranks[i]}</div><div class="t5inf"><div class="t5nm">${p.desc}</div><div class="t5cat">${p.icon} ${p.cat}</div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:var(--acc)"></div></div></div><div class="t5qty" style="color:var(--acc)">${p.rev.toLocaleString('ar-EG')}<div style="font-size:10px;color:var(--muted)">جنيه</div></div>`;
+        d.innerHTML=`<div class="t5rank">${ranks[i]}</div><div class="t5inf"><div class="t5nm">${p.desc}</div><div class="t5cat">${p.icon} ${p.cat}</div><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:var(--acc)"></div></div></div><div class="t5qty" style="color:var(--accx)">${p.rev.toLocaleString('ar-EG')}<div style="font-size:10px;color:var(--muted)">جنيه</div></div>`;
         t5r.appendChild(d);
       });
     }
@@ -1496,7 +1496,7 @@ function renderStats(){
   const cq={};products.forEach(p=>{cq[p.cat]=(cq[p.cat]||0)+p.qty});
   const sorted=Object.entries(cq).sort((a,b)=>b[1]-a[1]);const mx3=(sorted[0]&&sorted[0][1])||1;
   const cb=document.getElementById('catBars');if(cb){cb.innerHTML='';
-  sorted.forEach(([cat,qty])=>{const pct=Math.max(4,(qty/mx3)*100);const d=document.createElement('div');d.style.marginBottom='10px';d.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:700">'+getIcon(cat)+' '+cat+'</span><span style="font-size:12px;color:var(--acc);font-weight:700">'+qty+'</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%;background:var(--acc)"></div></div>';cb.appendChild(d)});}
+  sorted.forEach(([cat,qty])=>{const pct=Math.max(4,(qty/mx3)*100);const d=document.createElement('div');d.style.marginBottom='10px';d.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:700">'+getIcon(cat)+' '+cat+'</span><span style="font-size:12px;color:var(--accx);font-weight:700">'+qty+'</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%;background:var(--acc)"></div></div>';cb.appendChild(d)});}
 
   // SELLER STATS
   renderSellerStats();
@@ -1759,7 +1759,7 @@ function initExportPage(){
   const sales=getSales();const rets=getRets();
   document.getElementById('storageInfo').innerHTML=`
     <div style="display:flex;justify-content:space-around;margin-bottom:8px">
-      <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--acc)">${products.length}</div><div style="font-size:10px;color:var(--muted)">منتج</div></div>
+      <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--accx)">${products.length}</div><div style="font-size:10px;color:var(--muted)">منتج</div></div>
       <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--grn)">${sales.length}</div><div style="font-size:10px;color:var(--muted)">عملية بيع</div></div>
       <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--org)">${rets.length}</div><div style="font-size:10px;color:var(--muted)">مرتجع</div></div>
       <div style="text-align:center"><div style="font-size:20px;font-weight:900;color:var(--txt2)">${kb}</div><div style="font-size:10px;color:var(--muted)">KB</div></div>
@@ -1971,7 +1971,7 @@ function showStockUpdatePreview(changes,errors){
   const decreased=valid.filter(c=>c.newQty<c.oldQty).length;
 
   let summaryHtml=
-    valid.length+' منتج هيتغير'+(newItems.length?' · <span style="color:var(--acc)">'+newItems.length+' صنف جديد هيتم إضافته</span>':'')+
+    valid.length+' منتج هيتغير'+(newItems.length?' · <span style="color:var(--accx)">'+newItems.length+' صنف جديد هيتم إضافته</span>':'')+
     '<br><span style="color:var(--grn)">↑ '+increased+' زاد</span> · <span style="color:var(--org)">↓ '+decreased+' قلّ</span>';
 
   if(errors.length){
@@ -2006,7 +2006,7 @@ function showStockUpdatePreview(changes,errors){
   });
 
   if(newItems.length){
-    const hdr=document.createElement('div');hdr.style.cssText='font-size:11px;color:var(--acc);font-weight:700;text-align:center;padding:10px 0 8px;text-transform:uppercase;letter-spacing:1px';
+    const hdr=document.createElement('div');hdr.style.cssText='font-size:11px;color:var(--accx);font-weight:700;text-align:center;padding:10px 0 8px;text-transform:uppercase;letter-spacing:1px';
     hdr.textContent='✨ أصناف جديدة — اختار الفئة لكل واحد';list.appendChild(hdr);
 
     const catOptions=catOptionsHtml('');
@@ -2094,7 +2094,7 @@ function showUndoBanner(){
   if(existing)existing.remove();
   const banner=document.createElement('div');
   banner.id='undoBanner';
-  banner.style.cssText='position:fixed;bottom:98px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--acc-b);border-radius:30px;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:998;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+  banner.style.cssText='position:fixed;bottom:98px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--acc-b);border-radius:30px;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:998;box-shadow:0 8px 22px rgba(31,27,20,.15)';
   banner.innerHTML='<span style="font-size:12px;color:var(--txt)">تم تطبيق التحديث</span><button style="background:var(--acc);color:#000;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif" onclick="undoStockUpdate()">↩️ تراجع</button>';
   document.body.appendChild(banner);
   setTimeout(()=>{if(banner.parentNode)banner.remove()},15000);
@@ -2227,7 +2227,7 @@ function renderDashboard(){
       const isSelected=mk===monthPrefix;
       const row=document.createElement('div');
       row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-radius:10px;margin-bottom:6px;cursor:pointer;border:1px solid '+(isSelected?'var(--acc-b)':'var(--b)')+';background:'+(isSelected?'var(--acc-d)':'var(--s)');
-      row.innerHTML='<div><div style="font-size:13px;font-weight:700;color:'+(isSelected?'var(--acc)':'var(--txt)')+'">'+(isSelected?'◉ ':'')+mn+' '+y+'</div><div style="font-size:11px;color:var(--muted)">'+(data.rev>0?data.rev.toLocaleString('ar-EG')+' ج إيراد':data.qty+' قطعة')+'</div></div><div style="text-align:left"><div style="font-size:18px;font-weight:900;color:var(--acc)">'+comm+' ج</div><div style="font-size:9px;color:var(--muted)">عمولة 1.25%</div></div>';
+      row.innerHTML='<div><div style="font-size:13px;font-weight:700;color:'+(isSelected?'var(--acc)':'var(--txt)')+'">'+(isSelected?'◉ ':'')+mn+' '+y+'</div><div style="font-size:11px;color:var(--muted)">'+(data.rev>0?data.rev.toLocaleString('ar-EG')+' ج إيراد':data.qty+' قطعة')+'</div></div><div style="text-align:left"><div style="font-size:18px;font-weight:900;color:var(--accx)">'+comm+' ج</div><div style="font-size:9px;color:var(--muted)">عمولة 1.25%</div></div>';
       row.onclick=()=>{if(sel){sel.value=mk;renderDashboard()}};
       histEl.appendChild(row);
     });
@@ -2242,7 +2242,7 @@ function renderDashboard(){
     const ysRets=getRets().filter(r=>r.date===yStr).length;
     const lastST=localStorage.getItem('mq_last_stocktake')||'';
     if(ysSales===0&&ysRets===0&&lastST!==yStr&&lastST!==today){
-      reminderBox.innerHTML='<div class="alert-card anim" style="border-color:var(--acc-b);background:var(--acc-d);cursor:default;margin-bottom:10px"><div class="alert-icon">⏰</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--acc)">معدّش تسجيل أو جرد إمبارح</div><div style="font-size:10px;color:var(--muted)">تأكد إن كل البيانات مسجلة بشكل صحيح</div></div></div>';
+      reminderBox.innerHTML='<div class="alert-card anim" style="border-color:var(--acc-b);background:var(--acc-d);cursor:default;margin-bottom:10px"><div class="alert-icon">⏰</div><div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--accx)">معدّش تسجيل أو جرد إمبارح</div><div style="font-size:10px;color:var(--muted)">تأكد إن كل البيانات مسجلة بشكل صحيح</div></div></div>';
     } else {reminderBox.innerHTML=''}
   } else if(reminderBox){reminderBox.innerHTML=''}
 
