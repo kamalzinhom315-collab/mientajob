@@ -394,6 +394,12 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <div style="font-size:18px;font-weight:900;margin-bottom:4px">📤 التصدير والنسخ الاحتياطي</div>
   <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">صدّر بياناتك أو احتفظ بنسخة احتياطية</div>
 
+  <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:16px;margin-bottom:10px">
+    <div style="font-size:15px;font-weight:900;margin-bottom:4px">📜 سجل التغييرات</div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:6px">آخر 80 عملية: بيع، حذف، مرتجع، تعديل كمية، جرد</div>
+    <div id="logList"></div>
+  </div>
+
   <!-- Cloud connection verification -->
   <div style="background:var(--s);border:1px solid var(--acc-b);border-radius:var(--r);padding:16px;margin-bottom:10px">
     <div style="font-size:10px;color:var(--accx);font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">☁️ حالة الاتصال بالسحابة</div>
@@ -728,6 +734,7 @@ function showSyncStatus(s){
 
 function getAllData(){
   return {
+    log:JSON.parse(localStorage.getItem('mlog')||'[]'),
     flags:JSON.parse(localStorage.getItem('mflags')||'{}'),
     catOver:JSON.parse(localStorage.getItem('mcat_over')||'{}'),
     catCustom:JSON.parse(localStorage.getItem('mcat_custom')||'[]'),
@@ -746,6 +753,7 @@ function getAllData(){
 
 function applyData(d){
   if(!d)return;
+  if(d.log)localStorage.setItem('mlog',JSON.stringify(d.log));
   if(d.catOver)localStorage.setItem('mcat_over',JSON.stringify(d.catOver));
   if(d.catCustom)localStorage.setItem('mcat_custom',JSON.stringify(d.catCustom));
   if(d.delS)localStorage.setItem('md_s',JSON.stringify(d.delS.slice(-3000)));
@@ -807,6 +815,7 @@ function mergeData(local,remote,baseQty){
     flags:Object.assign({},remote.flags||{},local.flags||{}),
     catOver:Object.assign({},remote.catOver||{},local.catOver||{}),
     catCustom:(function(){const l=(remote.catCustom||[]).slice();(local.catCustom||[]).forEach(function(c){const i=l.findIndex(function(x){return x.name===c.name});if(i>=0)l[i]=c;else l.push(c)});return l})(),
+    log:(function(){const m={};(remote.log||[]).concat(local.log||[]).forEach(function(e){m[e.id]=e});return Object.keys(m).map(function(k){return m[k]}).sort(function(a,b){return a.t-b.t}).slice(-400)})(),
     delS:delS,delR:delR
   };
 }
@@ -953,6 +962,24 @@ function renderWeeklyBackupReminder(){
 }
 
 const saveQty=()=>{const m={};products.forEach(p=>{m[p.code]=p.qty});localStorage.setItem('mq',JSON.stringify(m));schedulSync()};
+function logEv(action,detail){
+  try{
+    const l=JSON.parse(localStorage.getItem('mlog')||'[]');
+    let who='';try{who=getSellerNames()[currentSeller]||''}catch(e){}
+    l.push({id:Date.now()*1000+Math.floor(Math.random()*1000),t:Date.now(),who:who,a:action,d:detail||''});
+    localStorage.setItem('mlog',JSON.stringify(l.slice(-400)));
+  }catch(e){}
+}
+function renderLog(){
+  const el=document.getElementById('logList');if(!el)return;
+  const l=JSON.parse(localStorage.getItem('mlog')||'[]').slice().reverse().slice(0,80);
+  if(!l.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">لسه مفيش تغييرات متسجلة</div>';return}
+  el.innerHTML=l.map(function(e){
+    const dt=new Date(e.t);
+    const ts=dt.toLocaleDateString('ar-EG',{day:'numeric',month:'short'})+' '+dt.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+    return '<div style="padding:8px 0;border-top:1px solid var(--b);font-size:12px"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+e.a+'</b><span style="color:var(--muted);white-space:nowrap">'+ts+'</span></div><div style="color:var(--txt2);margin-top:2px">'+(e.who?'👤 '+e.who+' · ':'')+e.d+'</div></div>';
+  }).join('');
+}
 const getSales=()=>JSON.parse(localStorage.getItem('ms')||'[]');
 function trackDeleted(key,tsKey,newList){
   const prev=JSON.parse(localStorage.getItem(key)||'[]');
@@ -1040,7 +1067,7 @@ function openDetail(code){
 }
 function dtChg(d){const eq=window._dq;eq.qty=Math.max(0,eq.qty+d);document.getElementById('dtqi').value=eq.qty;document.getElementById('dtqd').textContent=eq.qty}
 function dtInp(v){window._dq.qty=Math.max(0,parseInt(v)||0);document.getElementById('dtqd').textContent=window._dq.qty}
-function saveDetail(code){const p=products.find(x=>x.code===code);if(!p)return;p.qty=window._dq.qty;saveQty();markCountedToday([code]);closeOv('detailModal');renderProds();renderLow();toast('✅ تم تحديث الكمية!')}
+function saveDetail(code){const p=products.find(x=>x.code===code);if(!p)return;if(p.qty!==window._dq.qty)logEv('✏️ تعديل كمية',p.desc+': '+p.qty+' ← '+window._dq.qty);p.qty=window._dq.qty;saveQty();markCountedToday([code]);closeOv('detailModal');renderProds();renderLow();toast('✅ تم تحديث الكمية!')}
 
 
 // ===== CATEGORY MANAGEMENT =====
@@ -1162,7 +1189,9 @@ function confirmQS(){
   const price=parseFloat(document.getElementById('qsPrice').value)||0;
   const note=document.getElementById('qsNote').value.trim();
   if(p.qty<qty){toast('⚠️ الكمية المتاحة بس '+p.qty+' قطعة');return}
+  if(isDupSale(p.code,qty,price))return;
   p.qty-=qty;saveQty();
+  logEv('🛒 بيع سريع',qty+' × '+p.desc+' بسعر '+price);
   const total=qty*price;
   const sales=getSales();
   const names=getSellerNames();
@@ -1300,6 +1329,17 @@ function openSaleModal(){
   document.getElementById('saleModal').classList.add('on');
 }
 
+let dupPending=null;
+function isDupSale(code,qty,price){
+  const now=Date.now();
+  const dup=getSales().some(function(x){return x.code===code&&x.qty===qty&&x.price===price&&x.seller===currentSeller&&now-x.id<120000});
+  if(!dup){dupPending=null;return false}
+  const key=code+'|'+qty+'|'+price;
+  if(dupPending&&dupPending.key===key&&now-dupPending.t<15000){dupPending=null;return false}
+  dupPending={key:key,t:now};
+  toast('⚠️ نفس البيع اتسجل من أقل من دقيقتين. لو مش تكرار دوس تاني');
+  return true;
+}
 function saveSale(){
   const code=parseInt(document.getElementById('saleProd').value);
   const qty=parseInt(document.getElementById('saleQty').value)||0;
@@ -1311,7 +1351,9 @@ function saveSale(){
   if(!date){toast('⚠️ اختار التاريخ');return}
   const p=products.find(x=>x.code===code);if(!p)return;
   if(p.qty<qty){toast('⚠️ الكمية المتاحة بس '+p.qty+' قطعة');return}
+  if(isDupSale(code,qty,price))return;
   p.qty-=qty;saveQty();
+  logEv('🛒 بيع',qty+' × '+p.desc+' بسعر '+price);
   const total=qty*price;
   const names=getSellerNames();
   const sales=getSales();
@@ -1322,6 +1364,7 @@ function saveSale(){
 }
 function deleteSale(id){
   const sales=getSales();const s=sales.find(x=>x.id===parseInt(id));if(!s)return;
+  logEv('🗑️ حذف بيع',s.qty+' × '+s.desc+' ('+(s.sellerName||'')+' - '+s.date+')');
   const p=s.noStock?null:products.find(x=>x.code===s.code);if(p){p.qty+=s.qty;saveQty()}
   setSales(sales.filter(x=>x.id!==parseInt(id)));renderProds();renderSales();renderLow();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
@@ -1418,11 +1461,13 @@ function saveReturn(){
   const note=document.getElementById('retNote').value.trim();
   if(!code){toast('⚠️ اختار المنتج');return}if(qty<1){toast('⚠️ الكمية لازم 1 على الأقل');return}if(!reason){toast('⚠️ اختار سبب المرتجع');return}if(!date){toast('⚠️ اختار التاريخ');return}
   const p=products.find(x=>x.code===code);if(p){p.qty+=qty;saveQty()}
+  logEv('↩️ مرتجع',qty+' × '+(p?p.desc:code)+' - '+reason);
   const rets=getRets();rets.push({id:Date.now(),code,desc:p?p.desc:'—',qty,date,reason,note,cat:(p&&p.cat)||'—',icon:(p&&p.icon)||'📦'});setRets(rets);
   closeOv('returnModal');renderProds();renderRets();renderLow();toast(`✅ تم تسجيل مرتجع ${qty} قطعة وإضافتها للمخزون`);
 }
 function deleteReturn(id){
   const rets=getRets();const r=rets.find(x=>x.id===parseInt(id));if(!r)return;
+  logEv('🗑️ حذف مرتجع',r.qty+' × '+r.desc);
   const p=products.find(x=>x.code===r.code);if(p){p.qty=Math.max(0,p.qty-r.qty);saveQty()}
   setRets(rets.filter(x=>x.id!==parseInt(id)));renderProds();renderRets();renderLow();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
@@ -1672,7 +1717,7 @@ function updateStCount(){
 
 function saveStocktake(){
   const n=Object.keys(stChanges).length;if(!n){toast('⚠️ مفيش تغييرات — جرب "✓ تأكيد الجرد" لو راجعت الكميات بس متغيرتش');return}
-  Object.entries(stChanges).forEach(([code,qty])=>{const p=products.find(x=>x.code===parseInt(code));if(p)p.qty=qty});
+  Object.entries(stChanges).forEach(([code,qty])=>{const p=products.find(x=>x.code===parseInt(code));if(p){if(p.qty!==qty)logEv('⚡ جرد',p.desc+': '+p.qty+' ← '+qty);p.qty=qty}});
   saveQty();stChanges={};
   markCountedToday(stVisibleCodes);
   renderProds();renderLow();renderStocktake();
@@ -1707,6 +1752,7 @@ function saveNewProd(){
   if(products.find(p=>p.code===code)){toast('⚠️ الكود ده موجود بالفعل');return}
   const icon=getIcon(cat);
   products.push({code,desc,qty,origQty:qty,cat,icon,custom:true});
+  logEv('➕ صنف جديد',desc+' ('+qty+' قطعة)');
   saveQty();
   const custom=JSON.parse(localStorage.getItem('mc')||'[]');custom.push({code,desc,qty,cat});localStorage.setItem('mc',JSON.stringify(custom));
   closeOv('addProdModal');renderCats();renderProds();toast(`✅ تمت إضافة ${icon} ${desc}`);
@@ -1737,6 +1783,7 @@ function sw(name,btn){
   if(name==='dash')renderDashboard();
   if(name==='sales'){updateSellerFilterNames();renderSales()}
   if(name==='returns')renderRets();
+  if(name==='export')renderLog();
   if(name==='stats')renderStats();
   if(name==='stocktake'){renderStocktakeCats();renderStocktake()}
   if(name==='low')renderLow();
@@ -2543,6 +2590,10 @@ function renderSellerTargets(monthPrefix,monthName,monthSales){
   Object.keys(agg).forEach(function(n){if(names.indexOf(n)<0)names.push(n)});
   names.sort(function(a,b){return ((agg[b]||{r:0}).r)-((agg[a]||{r:0}).r)});
   let html='';
+  const nowD=new Date();
+  const isCur=monthPrefix===nowD.toISOString().slice(0,7);
+  const dim=new Date(nowD.getFullYear(),nowD.getMonth()+1,0).getDate();
+  const dayN=nowD.getDate(),daysLeft=Math.max(0,dim-dayN);
   names.forEach(function(n,i){
     const a=agg[n]||{q:0,r:0};
     const tg=per[n]||{};
@@ -2561,6 +2612,14 @@ function renderSellerTargets(monthPrefix,monthName,monthSales){
       '</div>'+
       '<div style="font-size:18px;font-weight:900;color:'+color+';margin-bottom:6px">'+a.r.toLocaleString('ar-EG')+'<span style="font-size:11px;color:var(--muted)">'+(hasR?' / '+tg.rev.toLocaleString('ar-EG'):'')+' ج</span></div>'+
       (hasR?'<div class="bar-bg" style="height:7px;margin-bottom:6px"><div class="bar-fill" style="width:'+pctR+'%;background:'+color+'"></div></div>':'')+
+      (function(){
+        if(!isCur||!hasR||hit)return '';
+        const proj=a.r/dayN*dim;
+        const ok=proj>=tg.rev;
+        let h='<div style="font-size:11px;margin-bottom:6px;color:'+(ok?'var(--grn)':'var(--org)')+';font-weight:700">'+(ok?'✅ بالمعدل ده هتوصل ':'⚠️ بالمعدل ده هتقفل على ')+Math.round(proj).toLocaleString('ar-EG')+' ج</div>';
+        if(daysLeft>0)h+='<div style="font-size:11px;color:var(--txt2);margin-bottom:6px">لازم يبيع '+Math.ceil((tg.rev-a.r)/daysLeft).toLocaleString('ar-EG')+' ج في اليوم لمدة '+daysLeft+' يوم</div>';
+        return h;
+      })()+
       '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">'+
         '<span>🔢 '+a.q.toLocaleString('ar-EG')+(hasQ?' / '+tg.qty.toLocaleString('ar-EG'):'')+' قطعة'+(hasQ?' ('+Math.min(100,a.q/tg.qty*100).toFixed(0)+'%)':'')+'</span>'+
         '<span>'+(hasR?(hit?'تخطى بـ '+(a.r-tg.rev).toLocaleString('ar-EG')+' ج':'باقي '+Math.max(0,tg.rev-a.r).toLocaleString('ar-EG')+' ج'):'لا يوجد تارجت - اضغط ✏️')+'</span>'+
@@ -2696,6 +2755,7 @@ function zeroStockNov24(){
   const codes=[548856,624473,573702,674727,674728,675736,654385,590915,664991,473963,646038,647701,575523,551077,434373,599163];
   const q=JSON.parse(localStorage.getItem('mq')||'{}');
   codes.forEach(function(c){q[c]=0});
+  logEv('🔧 تصفير 16 موديل','مش موجودين في جرد 22 نوفمبر');
   localStorage.setItem('mq',JSON.stringify(q));
   flags.zero_nov24=1;
   localStorage.setItem('mflags',JSON.stringify(flags));
