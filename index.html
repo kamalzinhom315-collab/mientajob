@@ -383,6 +383,10 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <div style="font-size:18px;font-weight:900;margin-bottom:4px">⚠️ مخزون منخفض</div>
   <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">المنتجات اللي محتاجة إعادة طلب</div>
   <div id="lowList"></div>
+  <div style="font-size:18px;font-weight:900;margin:24px 0 4px">🐌 أصناف راكدة</div>
+  <div style="font-size:13px;color:var(--txt2);margin-bottom:10px">موجودة في المخزن ومتباعتش بقالها فترة</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px" id="staleTabs"></div>
+  <div id="staleList"></div>
 </div>
 
 <!-- EXPORT PAGE -->
@@ -628,26 +632,9 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
 
 <script>
-// ===== SERVICE WORKER (offline support, no install banner) =====
+// ===== SERVICE WORKER (real file sw.js: works offline) =====
 if ('serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'mienta-v1';
-const ASSETS = [self.location.href];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request))));
-});
-  `;
-  const blob = new Blob([swCode], {type: 'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(() => {});
+  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
 }
 </script>
 
@@ -733,6 +720,7 @@ let syncTimer=null;
 
 function showSyncStatus(s){
   const el=document.getElementById('syncStatusChip');if(!el)return;
+  if(navigator.onLine===false){el.textContent='📴 أوفلاين - محفوظ عندك';el.style.color='var(--org)';return}
   if(s==='syncing'){el.textContent='🔄 مزامنة...';el.style.color='var(--muted)'}
   else if(s==='ok'){el.textContent='☁️ متزامن';el.style.color='var(--grn)'}
   else{el.textContent='⚠️ خطأ';el.style.color='var(--org)'}
@@ -853,6 +841,8 @@ async function dailyCloudBackup(data){
   }catch(e){}
 }
 
+window.addEventListener('offline',function(){showSyncStatus('error');toast('📴 مفيش نت - كمّل شغل والبيانات بتتحفظ عندك')});
+window.addEventListener('online',function(){toast('🌐 النت رجع - بتزامن...');syncToCloud()});
 let syncBusy=false,syncAgain=false;
 async function syncToCloud(){
   if(syncBusy){syncAgain=true;return}
@@ -1561,7 +1551,26 @@ function renderSellerStats(){
 }
 
 // LOW STOCK
-function renderLow(){
+let staleDays=30;
+function renderStale(){
+  const tabs=document.getElementById('staleTabs'),el=document.getElementById('staleList');if(!tabs||!el)return;
+  tabs.innerHTML='';
+  [30,60,90].forEach(function(d){const b=document.createElement('button');b.className='cat'+(d===staleDays?' on':'');b.textContent=d+' يوم';b.onclick=function(){staleDays=d;renderStale()};tabs.appendChild(b)});
+  const last={};
+  getSales().forEach(function(x){const t=new Date(x.date).getTime();if(!isNaN(t)&&(!last[x.code]||t>last[x.code]))last[x.code]=t});
+  const now=Date.now();
+  const items=products.filter(function(p){return p.qty>0}).map(function(p){const t=last[p.code];return {p:p,days:t?Math.floor((now-t)/86400000):null}})
+    .filter(function(x){return x.days===null||x.days>=staleDays})
+    .sort(function(a,b){return (b.days===null?99999:b.days)-(a.days===null?99999:a.days)||b.p.qty-a.p.qty});
+  if(!items.length){el.innerHTML='<div class="empty"><span class="ic">✅</span>مفيش أصناف راكدة</div>';return}
+  const pcs=items.reduce(function(s,x){return s+x.p.qty},0);
+  el.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:8px">'+items.length+' صنف · '+pcs+' قطعة واقفة</div>';
+  items.forEach(function(x){
+    const c=document.createElement('div');c.className='alert-card anim';c.style.cursor='pointer';
+    c.innerHTML='<div style="font-size:22px">🐌</div><div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:3px">'+x.p.desc+'</div><div style="font-size:10px;color:var(--muted)">#'+x.p.code+' · '+(x.days===null?'عمره ما اتباع':'آخر بيع من '+x.days+' يوم')+'</div></div><div style="font-size:22px;font-weight:900;color:var(--org)">'+x.p.qty+'</div>';
+    c.onclick=function(){openDetail(x.p.code)};el.appendChild(c)});
+}
+function renderLow(){renderStale();
   const items=products.filter(p=>p.qty<=5).sort((a,b)=>a.qty-b.qty);
   const el=document.getElementById('lowList');
   if(!items.length){el.innerHTML='<div class="empty"><span class="ic">✅</span>كل المخزون كويس!</div>';return}
