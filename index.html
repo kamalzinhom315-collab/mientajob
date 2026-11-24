@@ -712,6 +712,8 @@ function showSyncStatus(s){
 function getAllData(){
   return {
     flags:JSON.parse(localStorage.getItem('mflags')||'{}'),
+    delS:JSON.parse(localStorage.getItem('md_s')||'[]'),
+    delR:JSON.parse(localStorage.getItem('md_r')||'[]'),
     qty:JSON.parse(localStorage.getItem('mq')||'{}'),
     sales:JSON.parse(localStorage.getItem('ms')||'[]'),
     returns:JSON.parse(localStorage.getItem('mr')||'[]'),
@@ -725,6 +727,8 @@ function getAllData(){
 
 function applyData(d){
   if(!d)return;
+  if(d.delS)localStorage.setItem('md_s',JSON.stringify(d.delS.slice(-3000)));
+  if(d.delR)localStorage.setItem('md_r',JSON.stringify(d.delR.slice(-3000)));
   if(d.flags){const lf=JSON.parse(localStorage.getItem('mflags')||'{}');localStorage.setItem('mflags',JSON.stringify(Object.assign({},lf,d.flags)))}
   if(d.qty)localStorage.setItem('mq',JSON.stringify(d.qty));
   if(d.sales)localStorage.setItem('ms',JSON.stringify(d.sales));
@@ -736,16 +740,115 @@ function applyData(d){
   if(d.targets)localStorage.setItem('mt_targets',JSON.stringify(d.targets));
 }
 
+// ===== SAFE MERGE SYNC =====
+function unionIds(a,b){const m={};(a||[]).forEach(function(x){m[x]=1});(b||[]).forEach(function(x){m[x]=1});return Object.keys(m).map(function(x){return parseInt(x)})}
+function mergeById(a,b,dead){
+  const m={};
+  (b||[]).forEach(function(x){m[x.id]=x});
+  (a||[]).forEach(function(x){m[x.id]=x});
+  return Object.keys(m).map(function(k){return m[k]}).filter(function(x){return !dead[x.id]}).sort(function(p,q){return p.id-q.id});
+}
+function mergeData(local,remote,baseQty){
+  const delS=unionIds(local.delS,remote.delS),delR=unionIds(local.delR,remote.delR);
+  const dS={},dR={};delS.forEach(function(x){dS[x]=1});delR.forEach(function(x){dR[x]=1});
+  const lq=local.qty||{},rq=remote.qty||{};
+  const qty=Object.assign({},rq);
+  Object.keys(lq).forEach(function(k){
+    if(rq[k]===undefined){qty[k]=lq[k];return}
+    const b=(baseQty&&baseQty[k]!==undefined)?baseQty[k]:rq[k];
+    qty[k]=Math.max(0,rq[k]+(lq[k]-b));
+  });
+  const custom=(remote.custom||[]).slice();
+  (local.custom||[]).forEach(function(c){if(!custom.find(function(x){return x.code===c.code}))custom.push(c)});
+  let sellers=(remote.sellersList||[]).slice();
+  (local.sellersList||[]).forEach(function(l){
+    const e=sellers.find(function(x){return x.id===l.id});
+    if(e){e.name=l.name}else{sellers.push(l)}
+  });
+  const counts=Object.assign({},remote.counts||{});
+  Object.keys(local.counts||{}).forEach(function(k){if(!counts[k]||local.counts[k]>counts[k])counts[k]=local.counts[k]});
+  const targets=Object.assign({},remote.targets||{});
+  Object.keys(local.targets||{}).forEach(function(k){
+    const r=targets[k]||{},l=local.targets[k]||{};
+    const mt=Object.assign({},r,l);
+    if(r.perSeller||l.perSeller)mt.perSeller=Object.assign({},r.perSeller||{},l.perSeller||{});
+    targets[k]=mt;
+  });
+  return {
+    qty:qty,
+    sales:mergeById(local.sales,remote.sales,dS),
+    returns:mergeById(local.returns,remote.returns,dR),
+    custom:custom,
+    sellersList:sellers,
+    counts:counts,
+    counter:String(Math.max(parseInt(local.counter||'0'),parseInt(remote.counter||'0'))),
+    targets:targets,
+    flags:Object.assign({},remote.flags||{},local.flags||{}),
+    delS:delS,delR:delR
+  };
+}
+function storeMerged(m){
+  applyData(m);
+  localStorage.setItem('ms',JSON.stringify(m.sales));
+  localStorage.setItem('mr',JSON.stringify(m.returns));
+  localStorage.setItem('mq',JSON.stringify(m.qty));
+  localStorage.setItem('mq_base',JSON.stringify(m.qty));
+}
+function refreshAfterMerge(){
+  try{
+    products=buildProds();
+    if(typeof renderProds==='function')renderProds();
+    if(typeof renderLow==='function')renderLow();
+    if(typeof renderDashboard==='function')renderDashboard();
+    const pg=document.getElementById('page-sales');
+    if(pg&&pg.classList.contains('on')&&typeof renderSales==='function')renderSales();
+  }catch(e){}
+}
+
+// ===== DAILY CLOUD BACKUP (keeps last 14 days) =====
+async function dailyCloudBackup(data){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem('last_cloud_backup')===today)return;
+    const res=await fetch(SB_URL+'/rest/v1/inventory_data',{method:'POST',headers:Object.assign({},SB_HDR,{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({id:'backup_'+today,data:data,updated_at:new Date().toISOString()})});
+    if(!res.ok)return;
+    localStorage.setItem('last_cloud_backup',today);
+    const cut=new Date(Date.now()-14*86400000).toISOString().slice(0,10);
+    await fetch(SB_URL+'/rest/v1/inventory_data?and=(id.like.backup_2*,id.lt.backup_'+cut+')',{method:'DELETE',headers:SB_HDR});
+  }catch(e){}
+}
+
+let syncBusy=false,syncAgain=false;
 async function syncToCloud(){
+  if(syncBusy){syncAgain=true;return}
+  syncBusy=true;
   showSyncStatus('syncing');
   try{
-    const body=JSON.stringify({data:getAllData(),updated_at:new Date().toISOString()});
-    let res=await fetch(SB_URL+'/rest/v1/inventory_data?id=eq.main',{method:'PATCH',headers:{...SB_HDR,'Prefer':'return=minimal'},body});
-    if(!res.ok||res.status===404){
-      res=await fetch(SB_URL+'/rest/v1/inventory_data',{method:'POST',headers:{...SB_HDR,'Prefer':'return=minimal'},body:JSON.stringify({id:'main',data:getAllData(),updated_at:new Date().toISOString()})});
+    const g=await fetch(SB_URL+'/rest/v1/inventory_data?id=eq.main&select=data',{headers:SB_HDR});
+    if(!g.ok)throw new Error('get');
+    const rows=await g.json();
+    const exists=rows&&rows.length&&rows[0].data;
+    const remote=exists?rows[0].data:{};
+    const local=getAllData();
+    const base=JSON.parse(localStorage.getItem('mq_base')||'null');
+    const merged=mergeData(local,remote,base);
+    const changed=JSON.stringify(merged.qty)!==JSON.stringify(local.qty)||merged.sales.length!==local.sales.length||merged.returns.length!==local.returns.length;
+    storeMerged(merged);
+    const body=JSON.stringify({data:merged,updated_at:new Date().toISOString()});
+    let res;
+    if(exists){
+      res=await fetch(SB_URL+'/rest/v1/inventory_data?id=eq.main',{method:'PATCH',headers:Object.assign({},SB_HDR,{'Prefer':'return=minimal'}),body:body});
+    } else {
+      res=await fetch(SB_URL+'/rest/v1/inventory_data',{method:'POST',headers:Object.assign({},SB_HDR,{'Prefer':'return=minimal'}),body:JSON.stringify({id:'main',data:merged,updated_at:new Date().toISOString()})});
     }
     showSyncStatus(res.ok?'ok':'error');
+    if(res.ok){
+      if(changed)refreshAfterMerge();
+      dailyCloudBackup(merged);
+    }
   }catch(e){showSyncStatus('error')}
+  syncBusy=false;
+  if(syncAgain){syncAgain=false;schedulSync()}
 }
 
 async function loadFromCloud(){
@@ -755,13 +858,12 @@ async function loadFromCloud(){
     const rows=await res.json();
     if(rows&&rows.length&&rows[0].data){
       const remote=rows[0].data;
-      const localSales=JSON.parse(localStorage.getItem('ms')||'[]');
-      const remoteSales=(remote.sales||[]);
-      // Merge: take all unique sales by id
-      const merged=Object.values([...localSales,...remoteSales].reduce((acc,s)=>{acc[s.id]=s;return acc},{}));
-      remote.sales=merged.sort((a,b)=>a.id-b.id);
-      applyData(remote);
+      const local=getAllData();
+      const base=JSON.parse(localStorage.getItem('mq_base')||'null')||local.qty;
+      const merged=mergeData(local,remote,base);
+      storeMerged(merged);
       showSyncStatus('ok');
+      if(JSON.stringify(merged.qty)!==JSON.stringify(remote.qty||{})||merged.sales.length!==(remote.sales||[]).length||merged.returns.length!==(remote.returns||[]).length)schedulSync();
       return true;
     } else {
       await syncToCloud();
@@ -827,7 +929,15 @@ function renderWeeklyBackupReminder(){
 
 const saveQty=()=>{const m={};products.forEach(p=>{m[p.code]=p.qty});localStorage.setItem('mq',JSON.stringify(m));schedulSync()};
 const getSales=()=>JSON.parse(localStorage.getItem('ms')||'[]');
-const setSales=d=>{localStorage.setItem('ms',JSON.stringify(d));schedulSync()};
+function trackDeleted(key,tsKey,newList){
+  const prev=JSON.parse(localStorage.getItem(key)||'[]');
+  const keep={};newList.forEach(function(x){keep[x.id]=1});
+  let ts=JSON.parse(localStorage.getItem(tsKey)||'[]');
+  ts=ts.filter(function(id){return !keep[id]});
+  prev.forEach(function(x){if(!keep[x.id]&&ts.indexOf(x.id)<0)ts.push(x.id)});
+  localStorage.setItem(tsKey,JSON.stringify(ts.slice(-3000)));
+}
+const setSales=d=>{trackDeleted('ms','md_s',d);localStorage.setItem('ms',JSON.stringify(d));schedulSync()};
 
 // ===== INVOICE NUMBERING =====
 function getNextInvoiceNum(){
@@ -837,7 +947,7 @@ function getNextInvoiceNum(){
   return n;
 }
 const getRets=()=>JSON.parse(localStorage.getItem('mr')||'[]');
-const setRets=d=>{localStorage.setItem('mr',JSON.stringify(d));schedulSync()};
+const setRets=d=>{trackDeleted('mr','md_r',d);localStorage.setItem('mr',JSON.stringify(d));schedulSync()};
 const toast=msg=>{const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3000)};
 const closeOv=(id,e)=>{if(e&&e.target!==document.getElementById(id))return;document.getElementById(id).classList.remove('on')};
 
