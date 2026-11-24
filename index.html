@@ -1322,10 +1322,10 @@ function saveSale(){
 }
 function deleteSale(id){
   const sales=getSales();const s=sales.find(x=>x.id===parseInt(id));if(!s)return;
-  const p=products.find(x=>x.code===s.code);if(p){p.qty+=s.qty;saveQty()}
+  const p=s.noStock?null:products.find(x=>x.code===s.code);if(p){p.qty+=s.qty;saveQty()}
   setSales(sales.filter(x=>x.id!==parseInt(id)));renderProds();renderSales();renderLow();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
-  toast(`🗑️ تم الحذف ورجعت ${s.qty} قطعة للمخزون`);
+  toast(s.noStock?'🗑️ تم الحذف':`🗑️ تم الحذف ورجعت ${s.qty} قطعة للمخزون`);
 }
 
 // DATE FILTER
@@ -2719,12 +2719,26 @@ function importObour(){
   schedulSync();
 }
 
+const OBOUR_MAP={"Af4723A": 552611, "Af4763A": 579413, "Af4783A": 673257, "Af4793A": 688910, "BL1221A": 391114, "BL1261g": 661177, "BL1271g": 668430, "BL1291G": 674732, "Bl125A": 479766, "Cg2820A": 518296, "Ch2331A": 621103, "Ch2331B": 596356, "Ch2383A": 601775, "Ch2393A": 686266, "Cm3131A": 489183, "Cm3191A": 638392, "Cp103": 577312, "Ek2015A": 634672, "Ek2017A": 621100, "Ek2018A": 633556, "Ek2019a": 664739, "Ek2082": 649737, "Ek2092A": 473968, "Fp1413A": 654382, "Fp1415A": 654380, "Fplv083w": 682253, "Gs4211A": 649731, "Gs4211B": 664988, "Gs4250A": 529414, "Gs4270A": 649738, "Hb1113A": 654855, "Hb1114A": 649119, "Hb1115A": 649732, "Hb1117A": 664990, "Hb1119A": 674730, "Hb1120A": 689718, "Hb1121A": 690716, "Hm1372A": 654377, "Km3823c": 623145, "Km3833A": 638564, "Km3843A": 659630, "Km3843B": 679705, "Mw3214A": 689719, "Ov3010A": 677052, "Sf3513A": 674723, "Sf3514A": 674722, "Si1815A": 654378, "Si1815C": 689734, "Si1817A": 688911, "Si1817B": 688912, "Sm2740A": 655630, "Sm2760A": 518297, "Vc1950A": 556225, "Vc1960B": 624270, "Wf5053A": 674725};
+// يربط مبيعات العبور بأصناف المخزون (الاسم والفئة فقط، من غير خصم من المخزون لأن الجرد معمول بعد البيع)
+function linkObour(){
+  const sales=getSales();let n=0;
+  sales.forEach(function(x){
+    if(x.note!=='مبيعات العبور')return;
+    const inv=OBOUR_MAP[x.code];if(!inv)return;
+    const p=products.find(function(q){return String(q.code)===String(inv)});if(!p)return;
+    x.code=p.code;x.desc=p.desc;x.cat=p.cat;x.icon=p.icon||x.icon;x.noStock=true;n++;
+  });
+  if(n){localStorage.setItem('ms',JSON.stringify(sales));schedulSync()}
+}
+
 window.onload=async()=>{
   // Load from cloud first, then init
   await loadFromCloud();
   seedNov23();
   importObour();
   products=buildProds();
+  linkObour();
   renderCats();renderProds();renderDashboard();
   updateSellerFilterNames();updateSellerBtnLabels();
 };
