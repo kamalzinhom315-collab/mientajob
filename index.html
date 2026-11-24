@@ -2562,7 +2562,15 @@ function renderTargetCard(monthPrefix,monthName,monthQty,monthRev){
     (isHit
       ?'<div style="font-size:11px;color:var(--grn)">🎉 تخطيت التارجت بـ '+(achieved-t.value).toLocaleString('ar-EG')+' '+unit+'</div>'
       :'<div style="font-size:11px;color:var(--muted)">باقي <strong style="color:'+color+'">'+remaining.toLocaleString('ar-EG')+' '+unit+'</strong> للوصول للتارجت</div>'
-    );
+    )+(function(){
+      const nd=new Date();
+      if(isHit||monthPrefix!==nd.toISOString().slice(0,7))return '';
+      const dim=new Date(nd.getFullYear(),nd.getMonth()+1,0).getDate(),dn=nd.getDate(),left=Math.max(0,dim-dn);
+      const proj=achieved/dn*dim,ok=proj>=t.value;
+      let h='<div style="font-size:12px;margin-top:8px;font-weight:700;color:'+(ok?'var(--grn)':'var(--org)')+'">'+(ok?'✅ بالمعدل ده هتوصل ':'⚠️ بالمعدل ده هتقفل على ')+Math.round(proj).toLocaleString('ar-EG')+' '+unit+'</div>';
+      if(left>0)h+='<div style="font-size:11px;color:var(--txt2);margin-top:3px">لازم الفريق يبيع '+Math.ceil(remaining/left).toLocaleString('ar-EG')+' '+unit+' في اليوم لمدة '+left+' يوم</div>';
+      return h;
+    })();
 }
 
 
