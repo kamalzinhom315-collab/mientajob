@@ -344,6 +344,12 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
     <select id="pmSel" onchange="pmMonth=this.value;renderProdMonth()" style="flex:1;padding:10px 12px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--s);color:var(--txt);font-family:inherit;font-size:14px;font-weight:700"></select>
   </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input id="pmSearch" type="search" placeholder="🔍 ابحث باسم أو كود المنتج" oninput="pmQ=this.value;renderProdMonth()" style="flex:1.4;min-width:0;padding:10px 12px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--s);color:var(--txt);font-family:inherit;font-size:14px">
+    <select id="pmSort" onchange="pmSortBy=this.value;renderProdMonth()" style="flex:1;min-width:0;padding:10px 8px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--s);color:var(--txt);font-family:inherit;font-size:13px;font-weight:700">
+      <option value="most">الأكثر مبيعاً</option><option value="least">الأقل مبيعاً</option><option value="rev">الأعلى إيراداً</option><option value="name">الاسم (أ-ي)</option>
+    </select>
+  </div>
   <div id="pmSummary" style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:8px"></div>
   <div id="pmList"></div>
   <div class="lbl">🐌 أصناف راكدة</div>
@@ -1535,7 +1541,7 @@ function renderStats(){
   renderStale();
 }
 
-let pmMonth=null;
+let pmMonth=null,pmQ='',pmSortBy='most';
 function renderProdMonth(){
   const sel=document.getElementById('pmSel'),list=document.getElementById('pmList'),sum=document.getElementById('pmSummary');
   if(!sel||!list)return;
@@ -1549,17 +1555,25 @@ function renderProdMonth(){
   const agg={};
   sales.forEach(function(x){
     if(!x.date||x.date.slice(0,7)!==pmMonth)return;
-    const a=agg[x.code]||(agg[x.code]={desc:x.desc,icon:x.icon,q:0,sellers:{}});
-    a.q+=x.qty;const n=x.sellerName||'—';a.sellers[n]=(a.sellers[n]||0)+x.qty;
+    const a=agg[x.code]||(agg[x.code]={code:x.code,desc:x.desc,icon:x.icon,q:0,rev:0,sellers:{}});
+    a.q+=x.qty;a.rev+=(x.total||0);const n=x.sellerName||'—';a.sellers[n]=(a.sellers[n]||0)+x.qty;
   });
-  const items=Object.keys(agg).map(function(k){return agg[k]}).sort(function(a,b){return b.q-a.q});
-  if(!items.length){sum.textContent='';list.innerHTML='<div class="empty" style="padding:20px"><span class="ic" style="font-size:28px">📦</span>مفيش مبيعات في الشهر ده</div>';return}
+  let items=Object.keys(agg).map(function(k){return agg[k]});
+  const q=(pmQ||'').trim().toLowerCase();
+  if(q)items=items.filter(function(a){return (a.desc||'').toLowerCase().indexOf(q)>=0||String(a.code).indexOf(q)>=0});
+  items.sort(function(a,b){
+    if(pmSortBy==='least')return a.q-b.q;
+    if(pmSortBy==='rev')return b.rev-a.rev;
+    if(pmSortBy==='name')return (a.desc||'').localeCompare(b.desc||'');
+    return b.q-a.q;
+  });
+  if(!items.length){sum.textContent='';list.innerHTML='<div class="empty" style="padding:20px"><span class="ic" style="font-size:28px">📦</span>'+(q?'مفيش نتيجة للبحث':'مفيش مبيعات في الشهر ده')+'</div>';return}
   const tot=items.reduce(function(s,a){return s+a.q},0);
   sum.textContent=items.length+' صنف · '+tot.toLocaleString('ar-EG')+' قطعة';
-  const mx=items[0].q;
+  const mx=Math.max.apply(null,items.map(function(a){return a.q}));
   list.innerHTML=items.map(function(a){
     const chips=Object.keys(a.sellers).sort(function(x,y){return a.sellers[y]-a.sellers[x]}).map(function(n){return '<span style="background:var(--s2);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700">'+n+' '+a.sellers[n]+'</span>'}).join(' ');
-    return '<div class="t5card" style="display:block"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;font-size:13px;font-weight:700">'+(a.icon||'📦')+' '+a.desc+'</div><div style="font-size:22px;font-weight:900;color:var(--accx)">'+a.q+'</div></div><div class="bar-bg" style="margin:6px 0"><div class="bar-fill" style="width:'+Math.max(6,a.q/mx*100)+'%"></div></div><div style="display:flex;gap:6px;flex-wrap:wrap">'+chips+'</div></div>';
+    return '<div class="t5card" style="display:block"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;font-size:13px;font-weight:700">'+(a.icon||'📦')+' '+a.desc+'</div><div style="text-align:left"><div style="font-size:22px;font-weight:900;color:var(--accx);line-height:1.1">'+a.q+'</div>'+(a.rev>0?'<div style="font-size:10px;color:var(--muted)">'+a.rev.toLocaleString('ar-EG')+' ج</div>':'')+'</div></div><div class="bar-bg" style="margin:6px 0"><div class="bar-fill" style="width:'+Math.max(6,a.q/mx*100)+'%"></div></div><div style="display:flex;gap:6px;flex-wrap:wrap">'+chips+'</div></div>';
   }).join('');
 }
 
