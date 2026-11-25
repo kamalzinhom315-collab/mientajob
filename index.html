@@ -332,8 +332,6 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 
 <!-- STATS -->
 <div class="pg" id="page-stats">
-  <div class="lbl">نظرة عامة</div>
-  <div class="stats-grid" id="statsGrid"></div>
   <div class="lbl">🏆 أكثر 5 منتجات مبيعاً</div>
   <div id="top5List"></div>
   <div class="lbl">💵 الأكثر ربحاً (بالإيراد)</div>
@@ -342,6 +340,16 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <div id="sellerStats"></div>
   <div class="lbl">📅 مقارنة آخر 6 شهور</div>
   <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:14px;margin-bottom:14px" id="monthCompare"></div>
+  <div class="lbl">📦 مبيعات كل منتج بالشهر</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+    <select id="pmSel" onchange="pmMonth=this.value;renderProdMonth()" style="flex:1;padding:10px 12px;border-radius:var(--r2);border:1px solid var(--b2);background:var(--s);color:var(--txt);font-family:inherit;font-size:14px;font-weight:700"></select>
+  </div>
+  <div id="pmSummary" style="font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:8px"></div>
+  <div id="pmList"></div>
+  <div class="lbl">🐌 أصناف راكدة</div>
+  <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">موجودة في المخزن ومتباعتش بقالها فترة</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px" id="staleTabs"></div>
+  <div id="staleList"></div>
   <div class="lbl">توزيع الكميات</div>
   <div id="catBars"></div>
 </div>
@@ -379,16 +387,6 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
 </div>
 
 <!-- LOW -->
-<div class="pg" id="page-low">
-  <div style="font-size:18px;font-weight:900;margin-bottom:4px">⚠️ مخزون منخفض</div>
-  <div style="font-size:13px;color:var(--txt2);margin-bottom:16px">المنتجات اللي محتاجة إعادة طلب</div>
-  <div id="lowList"></div>
-  <div style="font-size:18px;font-weight:900;margin:24px 0 4px">🐌 أصناف راكدة</div>
-  <div style="font-size:13px;color:var(--txt2);margin-bottom:10px">موجودة في المخزن ومتباعتش بقالها فترة</div>
-  <div style="display:flex;gap:8px;margin-bottom:12px" id="staleTabs"></div>
-  <div id="staleList"></div>
-</div>
-
 <!-- EXPORT PAGE -->
 <div class="pg" id="page-export">
   <div style="font-size:18px;font-weight:900;margin-bottom:4px">📤 التصدير والنسخ الاحتياطي</div>
@@ -471,7 +469,6 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
   <button class="nb" onclick="sw('returns',this)"><span class="nb-i">↩️</span><span class="nb-l">مرتجعات</span></button>
   <button class="nb" onclick="sw('stats',this)"><span class="nb-i">📊</span><span class="nb-l">إحصائيات</span></button>
   <button class="nb" onclick="sw('stocktake',this)"><span class="nb-i">⚡</span><span class="nb-l">الجرد</span></button>
-  <button class="nb" onclick="sw('low',this)"><span class="nb-i">⚠️</span><span class="nb-l">منخفض</span></button>
   <button class="nb" onclick="sw('export',this)"><span class="nb-i">📤</span><span class="nb-l">تصدير</span></button>
 </div>
 
@@ -830,8 +827,8 @@ function refreshAfterMerge(){
   try{
     products=buildProds();
     if(typeof renderProds==='function')renderProds();
-    if(typeof renderLow==='function')renderLow();
     if(typeof renderDashboard==='function')renderDashboard();
+    if(document.getElementById('page-stats').classList.contains('on'))renderStats();
     const pg=document.getElementById('page-sales');
     if(pg&&pg.classList.contains('on')&&typeof renderSales==='function')renderSales();
   }catch(e){}
@@ -1067,7 +1064,7 @@ function openDetail(code){
 }
 function dtChg(d){const eq=window._dq;eq.qty=Math.max(0,eq.qty+d);document.getElementById('dtqi').value=eq.qty;document.getElementById('dtqd').textContent=eq.qty}
 function dtInp(v){window._dq.qty=Math.max(0,parseInt(v)||0);document.getElementById('dtqd').textContent=window._dq.qty}
-function saveDetail(code){const p=products.find(x=>x.code===code);if(!p)return;if(p.qty!==window._dq.qty)logEv('✏️ تعديل كمية',p.desc+': '+p.qty+' ← '+window._dq.qty);p.qty=window._dq.qty;saveQty();markCountedToday([code]);closeOv('detailModal');renderProds();renderLow();toast('✅ تم تحديث الكمية!')}
+function saveDetail(code){const p=products.find(x=>x.code===code);if(!p)return;if(p.qty!==window._dq.qty)logEv('✏️ تعديل كمية',p.desc+': '+p.qty+' ← '+window._dq.qty);p.qty=window._dq.qty;saveQty();markCountedToday([code]);closeOv('detailModal');renderProds();toast('✅ تم تحديث الكمية!')}
 
 
 // ===== CATEGORY MANAGEMENT =====
@@ -1197,7 +1194,7 @@ function confirmQS(){
   const names=getSellerNames();
   sales.push({id:Date.now(),inv:getNextInvoiceNum(),code:p.code,desc:p.desc,qty,price,total,date:new Date().toISOString().split('T')[0],note,cat:p.cat,icon:p.icon,seller:currentSeller,sellerName:names[currentSeller]});
   setSales(sales);
-  closeOv('qsModal');renderProds();renderLow();
+  closeOv('qsModal');renderProds();
   if(document.getElementById('page-sales').classList.contains('on'))renderSales();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
   toast('✅ تم بيع '+qty+' قطعة'+(total>0?' — '+total.toLocaleString('ar-EG')+' ج':''));
@@ -1359,14 +1356,14 @@ function saveSale(){
   const sales=getSales();
   sales.push({id:Date.now(),inv:getNextInvoiceNum(),code,desc:p.desc,qty,price,total,date,note,cat:p.cat,icon:p.icon,seller:currentSeller,sellerName:names[currentSeller]});
   setSales(sales);
-  closeOv('saleModal');renderProds();renderLow();renderSales();
+  closeOv('saleModal');renderProds();renderSales();
   toast('✅ تم تسجيل '+qty+' قطعة بواسطة '+names[currentSeller]);
 }
 function deleteSale(id){
   const sales=getSales();const s=sales.find(x=>x.id===parseInt(id));if(!s)return;
   logEv('🗑️ حذف بيع',s.qty+' × '+s.desc+' ('+(s.sellerName||'')+' - '+s.date+')');
   const p=s.noStock?null:products.find(x=>x.code===s.code);if(p){p.qty+=s.qty;saveQty()}
-  setSales(sales.filter(x=>x.id!==parseInt(id)));renderProds();renderSales();renderLow();
+  setSales(sales.filter(x=>x.id!==parseInt(id)));renderProds();renderSales();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
   toast(s.noStock?'🗑️ تم الحذف':`🗑️ تم الحذف ورجعت ${s.qty} قطعة للمخزون`);
 }
@@ -1463,13 +1460,13 @@ function saveReturn(){
   const p=products.find(x=>x.code===code);if(p){p.qty+=qty;saveQty()}
   logEv('↩️ مرتجع',qty+' × '+(p?p.desc:code)+' - '+reason);
   const rets=getRets();rets.push({id:Date.now(),code,desc:p?p.desc:'—',qty,date,reason,note,cat:(p&&p.cat)||'—',icon:(p&&p.icon)||'📦'});setRets(rets);
-  closeOv('returnModal');renderProds();renderRets();renderLow();toast(`✅ تم تسجيل مرتجع ${qty} قطعة وإضافتها للمخزون`);
+  closeOv('returnModal');renderProds();renderRets();toast(`✅ تم تسجيل مرتجع ${qty} قطعة وإضافتها للمخزون`);
 }
 function deleteReturn(id){
   const rets=getRets();const r=rets.find(x=>x.id===parseInt(id));if(!r)return;
   logEv('🗑️ حذف مرتجع',r.qty+' × '+r.desc);
   const p=products.find(x=>x.code===r.code);if(p){p.qty=Math.max(0,p.qty-r.qty);saveQty()}
-  setRets(rets.filter(x=>x.id!==parseInt(id)));renderProds();renderRets();renderLow();
+  setRets(rets.filter(x=>x.id!==parseInt(id)));renderProds();renderRets();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
   toast(`🗑️ تم الحذف وطُرحت ${r.qty} قطعة من المخزون`);
 }
@@ -1496,7 +1493,6 @@ function renderStats(){
   const ts=getSales().reduce((s,x)=>s+x.qty,0);
   const tr=getRets().reduce((s,x)=>s+x.qty,0);
   const rev=getSales().reduce((s,x)=>s+(x.total||0),0);
-  document.getElementById('statsGrid').innerHTML=`<div class="stat-c"><div class="sv">${products.length}</div><div class="sl">إجمالي الأصناف</div></div><div class="stat-c"><div class="sv">${tq}</div><div class="sl">إجمالي القطع</div></div><div class="stat-c" style="border-color:var(--grn-b)"><div class="sv" style="color:var(--grn)">${ts}</div><div class="sl">💰 قطع مباعة</div></div><div class="stat-c" style="border-color:var(--acc-b)"><div class="sv" style="color:var(--accx);font-size:${rev>=1000?'20px':'28px'}">${rev>0?rev.toLocaleString('ar-EG')+'<span style="font-size:14px"> ج</span>':'—'}</div><div class="sl">💵 إجمالي الإيراد</div></div><div class="stat-c" style="border-color:var(--org-b)"><div class="sv" style="color:var(--org)">${tr}</div><div class="sl">↩️ مرتجعات</div></div><div class="stat-c" style="border-color:var(--red-b)"><div class="sv" style="color:var(--red)">${z}</div><div class="sl">نفذ من المخزون</div></div>`;
   // TOP 5
   const pc={};getSales().forEach(s=>{if(!pc[s.code])pc[s.code]={qty:0,desc:s.desc,icon:s.icon,cat:s.cat};pc[s.code].qty+=s.qty});
   const top5=Object.values(pc).sort((a,b)=>b.qty-a.qty).slice(0,5);
@@ -1535,6 +1531,36 @@ function renderStats(){
 
   // SELLER STATS
   renderSellerStats();
+  renderProdMonth();
+  renderStale();
+}
+
+let pmMonth=null;
+function renderProdMonth(){
+  const sel=document.getElementById('pmSel'),list=document.getElementById('pmList'),sum=document.getElementById('pmSummary');
+  if(!sel||!list)return;
+  const sales=getSales();
+  const cur=new Date().toISOString().slice(0,7);
+  const set={};set[cur]=1;sales.forEach(function(x){if(x.date)set[x.date.slice(0,7)]=1});
+  const months=Object.keys(set).sort().reverse();
+  if(!pmMonth||!set[pmMonth])pmMonth=cur;
+  const mn=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  sel.innerHTML=months.map(function(m){return '<option value="'+m+'"'+(m===pmMonth?' selected':'')+'>'+mn[parseInt(m.slice(5,7))-1]+' '+m.slice(0,4)+(m===cur?' (الحالي)':'')+'</option>'}).join('');
+  const agg={};
+  sales.forEach(function(x){
+    if(!x.date||x.date.slice(0,7)!==pmMonth)return;
+    const a=agg[x.code]||(agg[x.code]={desc:x.desc,icon:x.icon,q:0,sellers:{}});
+    a.q+=x.qty;const n=x.sellerName||'—';a.sellers[n]=(a.sellers[n]||0)+x.qty;
+  });
+  const items=Object.keys(agg).map(function(k){return agg[k]}).sort(function(a,b){return b.q-a.q});
+  if(!items.length){sum.textContent='';list.innerHTML='<div class="empty" style="padding:20px"><span class="ic" style="font-size:28px">📦</span>مفيش مبيعات في الشهر ده</div>';return}
+  const tot=items.reduce(function(s,a){return s+a.q},0);
+  sum.textContent=items.length+' صنف · '+tot.toLocaleString('ar-EG')+' قطعة';
+  const mx=items[0].q;
+  list.innerHTML=items.map(function(a){
+    const chips=Object.keys(a.sellers).sort(function(x,y){return a.sellers[y]-a.sellers[x]}).map(function(n){return '<span style="background:var(--s2);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700">'+n+' '+a.sellers[n]+'</span>'}).join(' ');
+    return '<div class="t5card" style="display:block"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;font-size:13px;font-weight:700">'+(a.icon||'📦')+' '+a.desc+'</div><div style="font-size:22px;font-weight:900;color:var(--accx)">'+a.q+'</div></div><div class="bar-bg" style="margin:6px 0"><div class="bar-fill" style="width:'+Math.max(6,a.q/mx*100)+'%"></div></div><div style="display:flex;gap:6px;flex-wrap:wrap">'+chips+'</div></div>';
+  }).join('');
 }
 
 function renderSellerStats(){
@@ -1615,7 +1641,7 @@ function renderStale(){
     c.innerHTML='<div style="font-size:22px">🐌</div><div style="flex:1"><div style="font-size:13px;font-weight:700;margin-bottom:3px">'+x.p.desc+'</div><div style="font-size:10px;color:var(--muted)">#'+x.p.code+' · '+(x.days===null?'عمره ما اتباع':'آخر بيع من '+x.days+' يوم')+'</div></div><div style="font-size:22px;font-weight:900;color:var(--org)">'+x.p.qty+'</div>';
     c.onclick=function(){openDetail(x.p.code)};el.appendChild(c)});
 }
-function renderLow(){renderStale();
+function renderLowOld(){
   const items=products.filter(p=>p.qty<=5).sort((a,b)=>a.qty-b.qty);
   const el=document.getElementById('lowList');
   if(!items.length){el.innerHTML='<div class="empty"><span class="ic">✅</span>كل المخزون كويس!</div>';return}
@@ -1720,7 +1746,7 @@ function saveStocktake(){
   Object.entries(stChanges).forEach(([code,qty])=>{const p=products.find(x=>x.code===parseInt(code));if(p){if(p.qty!==qty)logEv('⚡ جرد',p.desc+': '+p.qty+' ← '+qty);p.qty=qty}});
   saveQty();stChanges={};
   markCountedToday(stVisibleCodes);
-  renderProds();renderLow();renderStocktake();
+  renderProds();renderStocktake();
   localStorage.setItem('mq_last_stocktake',new Date().toISOString().split('T')[0]);
   toast('✅ تم حفظ '+n+' تغيير وتسجيل '+stVisibleCodes.length+' منتج كمجرود');
 }
@@ -1776,6 +1802,7 @@ function handleScan(raw){
 }
 
 // NAVIGATION
+function goPage(n){const b=document.querySelector(".nb[onclick*=\"'"+n+"'\"]");if(b)sw(n,b)}
 function sw(name,btn){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
@@ -1786,7 +1813,6 @@ function sw(name,btn){
   if(name==='export')renderLog();
   if(name==='stats')renderStats();
   if(name==='stocktake'){renderStocktakeCats();renderStocktake()}
-  if(name==='low')renderLow();
   if(name==='export')initExportPage();
 }
 function onSearch(){srch=document.getElementById('searchInput').value;renderProds()}
@@ -2135,7 +2161,7 @@ function confirmStockUpdate(){
   pendingStockUpdate=null;
   pendingStockErrors=null;
   closeOv('stockUpdateModal');
-  renderCats();renderProds();renderLow();
+  renderCats();renderProds();
   if(document.getElementById('page-stats').classList.contains('on'))renderStats();
 
   let msg='✅ تم تحديث '+updated+' منتج';
@@ -2165,7 +2191,7 @@ function undoStockUpdate(){
     localStorage.setItem('mq',JSON.stringify(m));
     localStorage.setItem('mc',JSON.stringify(data.custom||[]));
     products=buildProds();
-    renderCats();renderProds();renderLow();
+    renderCats();renderProds();
     if(document.getElementById('page-stats').classList.contains('on'))renderStats();
     localStorage.removeItem('mq_before_update');
     const banner=document.getElementById('undoBanner');if(banner)banner.remove();
@@ -2311,13 +2337,13 @@ function renderDashboard(){
     if(zero>0){
       const a=document.createElement('div');a.className='alert-card anim';a.style.cursor='pointer';
       a.innerHTML='<div class="alert-icon">🔴</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+zero+' منتج نفذ من المخزون</div><div style="font-size:10px;color:var(--muted)">يحتاج إعادة طلب فوراً</div></div><div style="font-size:18px;color:var(--muted)">←</div>';
-      a.onclick=()=>sw('low',document.querySelectorAll('.nb')[6]);
+      a.onclick=()=>goPage('inv');
       alertBox.appendChild(a);
     }
     if(low>0){
       const a=document.createElement('div');a.className='alert-card anim';a.style.cursor='pointer';a.style.borderColor='var(--org-b)';
       a.innerHTML='<div class="alert-icon">🟡</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+low+' منتج مخزونه منخفض</div><div style="font-size:10px;color:var(--muted)">أقل من 4 قطع</div></div><div style="font-size:18px;color:var(--muted)">←</div>';
-      a.onclick=()=>sw('low',document.querySelectorAll('.nb')[6]);
+      a.onclick=()=>goPage('inv');
       alertBox.appendChild(a);
     }
   } else {
