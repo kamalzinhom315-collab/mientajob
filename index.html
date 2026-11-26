@@ -770,6 +770,28 @@ function applyData(d){
   if(d.counts)localStorage.setItem('mq_counts',JSON.stringify(d.counts));
   if(d.counter){const loc=parseInt(localStorage.getItem('mi_counter')||'0');const rem=parseInt(d.counter||'0');if(rem>loc)localStorage.setItem('mi_counter',String(rem))}
   if(d.targets)localStorage.setItem('mt_targets',JSON.stringify(d.targets));
+  purgeDropped();
+}
+
+// ===== شهر أغسطس 2026 اتشال من الملف (البداية من نوفمبر) =====
+const DROP_MONTH='2026-08';
+function stripDropped(d){
+  if(d.sales)d.sales=d.sales.filter(function(x){return !(x.date&&x.date.slice(0,7)===DROP_MONTH)});
+  if(d.returns)d.returns=d.returns.filter(function(x){return !(x.date&&x.date.slice(0,7)===DROP_MONTH)});
+  if(d.targets&&d.targets[DROP_MONTH])delete d.targets[DROP_MONTH];
+  return d;
+}
+function mergeData(local,remote,base){return stripDropped(mergeDataRaw(local,remote,base))}
+function purgeDropped(){
+  const sales=JSON.parse(localStorage.getItem('ms')||'[]'),rets=JSON.parse(localStorage.getItem('mr')||'[]');
+  const tg=JSON.parse(localStorage.getItem('mt_targets')||'{}');
+  const bs=sales.filter(function(x){return x.date&&x.date.slice(0,7)===DROP_MONTH});
+  const br=rets.filter(function(x){return x.date&&x.date.slice(0,7)===DROP_MONTH});
+  if(!bs.length&&!br.length&&!tg[DROP_MONTH])return false;
+  if(bs.length){const ds=JSON.parse(localStorage.getItem('md_s')||'[]');bs.forEach(function(x){ds.push(x.id)});localStorage.setItem('md_s',JSON.stringify(ds.slice(-3000)));localStorage.setItem('ms',JSON.stringify(sales.filter(function(x){return bs.indexOf(x)<0})))}
+  if(br.length){const dr=JSON.parse(localStorage.getItem('md_r')||'[]');br.forEach(function(x){dr.push(x.id)});localStorage.setItem('md_r',JSON.stringify(dr.slice(-3000)));localStorage.setItem('mr',JSON.stringify(rets.filter(function(x){return br.indexOf(x)<0})))}
+  if(tg[DROP_MONTH]){delete tg[DROP_MONTH];localStorage.setItem('mt_targets',JSON.stringify(tg))}
+  return true;
 }
 
 // ===== SAFE MERGE SYNC =====
@@ -780,7 +802,7 @@ function mergeById(a,b,dead){
   (a||[]).forEach(function(x){m[x.id]=x});
   return Object.keys(m).map(function(k){return m[k]}).filter(function(x){return !dead[x.id]}).sort(function(p,q){return p.id-q.id});
 }
-function mergeData(local,remote,baseQty){
+function mergeDataRaw(local,remote,baseQty){
   const delS=unionIds(local.delS,remote.delS),delR=unionIds(local.delR,remote.delR);
   const dS={},dR={};delS.forEach(function(x){dS[x]=1});delR.forEach(function(x){dR[x]=1});
   const lq=local.qty||{},rq=remote.qty||{};
@@ -2858,6 +2880,7 @@ window.onload=async()=>{
   await loadFromCloud();
   seedNov23();
   zeroStockNov24();
+  if(purgeDropped())schedulSync();
   importObour();
   products=buildProds();
   linkObour();
