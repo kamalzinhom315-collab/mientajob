@@ -500,6 +500,7 @@ select.fi{cursor:pointer}textarea.fi{resize:none;height:70px}
     <div class="field"><label>البائع</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap" id="qsSellerBtns"></div>
     </div>
+    <div class="field"><label>تاريخ البيع</label><input class="fi" type="date" id="qsDate"></div>
     <div class="field"><label>ملاحظة</label><input class="fi" type="text" id="qsNote" placeholder="اسم العميل أو رقم الفاتورة..."></div>
     <div class="field"><label>سعر الوحدة (جنيه)</label><input class="fi" type="number" id="qsPrice" placeholder="0" min="0" inputmode="decimal" oninput="qsCalcTotal()"></div>
     <div id="qsTotalBox" style="background:var(--grn-d);border:1px solid var(--grn-b);border-radius:var(--r2);padding:10px 14px;margin-bottom:14px;display:none;justify-content:space-between;align-items:center">
@@ -865,12 +866,12 @@ function refreshAfterMerge(){
 // ===== DAILY CLOUD BACKUP (keeps last 14 days) =====
 async function dailyCloudBackup(data){
   try{
-    const today=new Date().toISOString().slice(0,10);
+    const today=ymd(new Date());
     if(localStorage.getItem('last_cloud_backup')===today)return;
     const res=await fetch(SB_URL+'/rest/v1/inventory_data',{method:'POST',headers:Object.assign({},SB_HDR,{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({id:'backup_'+today,data:data,updated_at:new Date().toISOString()})});
     if(!res.ok)return;
     localStorage.setItem('last_cloud_backup',today);
-    const cut=new Date(Date.now()-14*86400000).toISOString().slice(0,10);
+    const cut=ymd(new Date(Date.now()-14*86400000));
     await fetch(SB_URL+'/rest/v1/inventory_data?and=(id.like.backup_2*,id.lt.backup_'+cut+')',{method:'DELETE',headers:SB_HDR});
   }catch(e){}
 }
@@ -1005,6 +1006,7 @@ function renderLog(){
     return '<div style="padding:8px 0;border-top:1px solid var(--b);font-size:12px"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+e.a+'</b><span style="color:var(--muted);white-space:nowrap">'+ts+'</span></div><div style="color:var(--txt2);margin-top:2px">'+(e.who?'👤 '+e.who+' · ':'')+e.d+'</div></div>';
   }).join('');
 }
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 const getSales=()=>JSON.parse(localStorage.getItem('ms')||'[]');
 function trackDeleted(key,tsKey,newList){
   const prev=JSON.parse(localStorage.getItem(key)||'[]');
@@ -1178,6 +1180,7 @@ function openQS(code){
   document.getElementById('qsMeta').textContent='#'+p.code+' · '+p.cat;
   document.getElementById('qsQty').value=1;
   document.getElementById('qsNote').value='';
+  document.getElementById('qsDate').value=ymd(new Date());
   document.getElementById('qsPrice').value='';
   document.getElementById('qsTotalBox').style.display='none';
   document.getElementById('qsRemain').textContent=p.qty-1;
@@ -1213,6 +1216,7 @@ function confirmQS(){
   const qty=Math.max(1,parseInt(document.getElementById('qsQty').value)||1);
   const price=parseFloat(document.getElementById('qsPrice').value)||0;
   const note=document.getElementById('qsNote').value.trim();
+  const qdate=document.getElementById('qsDate').value||ymd(new Date());
   if(p.qty<qty){toast('⚠️ الكمية المتاحة بس '+p.qty+' قطعة');return}
   if(isDupSale(p.code,qty,price))return;
   p.qty-=qty;saveQty();
@@ -1220,7 +1224,7 @@ function confirmQS(){
   const total=qty*price;
   const sales=getSales();
   const names=getSellerNames();
-  sales.push({id:Date.now(),inv:getNextInvoiceNum(),code:p.code,desc:p.desc,qty,price,total,date:new Date().toISOString().split('T')[0],note,cat:p.cat,icon:p.icon,seller:currentSeller,sellerName:names[currentSeller]});
+  sales.push({id:Date.now(),inv:getNextInvoiceNum(),code:p.code,desc:p.desc,qty,price,total,date:qdate,note,cat:p.cat,icon:p.icon,seller:currentSeller,sellerName:names[currentSeller]});
   setSales(sales);
   closeOv('qsModal');renderProds();
   if(document.getElementById('page-sales').classList.contains('on'))renderSales();
@@ -1346,7 +1350,7 @@ function openSaleModal(){
   updateSellerBtnLabels();
   document.getElementById('saleQty').value=1;
   document.getElementById('salePrice').value='';
-  document.getElementById('saleDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('saleDate').value=ymd(new Date());
   document.getElementById('saleNote').value='';
   document.getElementById('saleTotalBox').style.display='none';
   updateSellerBtnLabels();
@@ -1417,8 +1421,8 @@ function updateSellerFilterNames(){
 
 function setDF(m,b){dfMode=m;document.querySelectorAll('.df .dfb').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('dfDates').classList.toggle('on',m==='custom');renderSales()}
 function getFilteredSales(){
-  const all=getSales();const today=new Date().toISOString().split('T')[0];
-  const weekAgo=new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+  const all=getSales();const today=ymd(new Date());
+  const weekAgo=ymd(new Date(Date.now()-7*86400000));
   const monthStart=today.slice(0,7)+'-01';
   let res=all;
   if(dfMode==='today')res=all.filter(s=>s.date===today);
@@ -1440,7 +1444,7 @@ function renderSales(){
   if(!sales.length){el.innerHTML='<div class="empty"><span class="ic">💰</span>مفيش مبيعات في هذه الفترة</div>';return}
   const byMonth={};
   [...sales].sort((a,b)=>b.date.localeCompare(a.date)).forEach(s=>{const mk=s.date.slice(0,7);if(!byMonth[mk])byMonth[mk]=[];byMonth[mk].push(s)});
-  el.innerHTML='';const curM=new Date().toISOString().slice(0,7);
+  el.innerHTML='';const curM=ymd(new Date()).slice(0,7);
   Object.entries(byMonth).forEach(([mk,items])=>{
     const[yr,mo]=mk.split('-');const mi=parseInt(mo)-1;
     const mTotal=items.reduce((s,x)=>s+x.qty,0);
@@ -1476,7 +1480,7 @@ function renderSales(){
 }
 
 // RETURNS
-function openReturnModal(){fillSelects();document.getElementById('retQty').value=1;document.getElementById('retDate').value=new Date().toISOString().split('T')[0];document.getElementById('retReason').value='';document.getElementById('retNote').value='';document.getElementById('retOtherWrap').style.display='none';document.getElementById('returnModal').classList.add('on')}
+function openReturnModal(){fillSelects();document.getElementById('retQty').value=1;document.getElementById('retDate').value=ymd(new Date());document.getElementById('retReason').value='';document.getElementById('retNote').value='';document.getElementById('retOtherWrap').style.display='none';document.getElementById('returnModal').classList.add('on')}
 function saveReturn(){
   const code=parseInt(document.getElementById('retProd').value);
   const qty=parseInt(document.getElementById('retQty').value)||0;
@@ -1568,7 +1572,7 @@ function renderProdMonth(){
   const sel=document.getElementById('pmSel'),list=document.getElementById('pmList'),sum=document.getElementById('pmSummary');
   if(!sel||!list)return;
   const sales=getSales();
-  const cur=new Date().toISOString().slice(0,7);
+  const cur=ymd(new Date()).slice(0,7);
   const set={};set[cur]=1;sales.forEach(function(x){if(x.date)set[x.date.slice(0,7)]=1});
   const months=Object.keys(set).sort().reverse();
   if(!pmMonth||!set[pmMonth])pmMonth=cur;
@@ -1728,7 +1732,7 @@ function renderStocktake(){
     const lastCounts=JSON.parse(localStorage.getItem('mq_counts')||'{}');
     const lastDate=lastCounts[p.code];
     const lastLbl=lastDate?formatLastCounted(lastDate):'لم يُجرد من قبل';
-    const isToday=lastDate===new Date().toISOString().split('T')[0];
+    const isToday=lastDate===ymd(new Date());
     const c=document.createElement('div');c.className='st-card anim';c.style.animationDelay=(i*.01)+'s';
     c.innerHTML=`
       <div style="width:38px;height:38px;border-radius:10px;background:var(--s2);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${p.icon}</div>
@@ -1745,7 +1749,7 @@ function renderStocktake(){
 
 // Format last-counted date relative to today
 function formatLastCounted(dateStr){
-  const today=new Date().toISOString().split('T')[0];
+  const today=ymd(new Date());
   if(dateStr===today)return 'تم الجرد النهاردة';
   const d1=new Date(dateStr+'T00:00:00');
   const d2=new Date(today+'T00:00:00');
@@ -1783,20 +1787,20 @@ function saveStocktake(){
   saveQty();stChanges={};
   markCountedToday(stVisibleCodes);
   renderProds();renderStocktake();
-  localStorage.setItem('mq_last_stocktake',new Date().toISOString().split('T')[0]);
+  localStorage.setItem('mq_last_stocktake',ymd(new Date()));
   toast('✅ تم حفظ '+n+' تغيير وتسجيل '+stVisibleCodes.length+' منتج كمجرود');
 }
 
 function markCountedAll(){
   if(!stVisibleCodes.length){toast('⚠️ مفيش منتجات معروضة');return}
   markCountedToday(stVisibleCodes);
-  localStorage.setItem('mq_last_stocktake',new Date().toISOString().split('T')[0]);
+  localStorage.setItem('mq_last_stocktake',ymd(new Date()));
   renderStocktake();
   toast('✅ تم تأكيد جرد '+stVisibleCodes.length+' منتج');
 }
 
 function markCountedToday(codes){
-  const today=new Date().toISOString().split('T')[0];
+  const today=ymd(new Date());
   const counts=JSON.parse(localStorage.getItem('mq_counts')||'{}');
   codes.forEach(code=>{counts[code]=today});
   localStorage.setItem('mq_counts',JSON.stringify(counts));
@@ -1976,7 +1980,7 @@ function exportFullExcel(){
   const ws3=XLSX.utils.aoa_to_sheet(invRows);ws3['!cols']=[{wch:12},{wch:42},{wch:18},{wch:14},{wch:14},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws3,'المخزون');
 
-  XLSX.writeFile(wb,'Mienta_Full_'+new Date().toISOString().split('T')[0]+'.xlsx');
+  XLSX.writeFile(wb,'Mienta_Full_'+ymd(new Date())+'.xlsx');
   toast('✅ تم تصدير الملف الكامل');
 }
 
@@ -2237,7 +2241,7 @@ function undoStockUpdate(){
 function exportBackup(){
   const data={products:products.map(p=>({code:p.code,desc:p.desc,qty:p.qty,origQty:p.origQty,cat:p.cat,custom:p.custom||false})),sales:getSales(),returns:getRets(),custom:JSON.parse(localStorage.getItem('mc')||'[]'),exportedAt:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Mienta_Backup_'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Mienta_Backup_'+ymd(new Date())+'.json';a.click();URL.revokeObjectURL(url);
   localStorage.setItem('last_backup_date',new Date().toISOString());
   renderWeeklyBackupReminder();
   toast('✅ تم تحميل النسخة الاحتياطية');
@@ -2266,7 +2270,7 @@ function importBackup(input){
 // ===== DASHBOARD =====
 function renderDashboard(){
   const now=new Date();
-  const today=now.toISOString().split('T')[0];
+  const today=ymd(now);
   const hour=now.getHours();
   const curMonthPrefix=today.slice(0,7);
   const MNAMES=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -2355,7 +2359,7 @@ function renderDashboard(){
   const reminderBox=document.getElementById('dashReminderBox');
   if(reminderBox&&isCurrentMonth){
     const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);
-    const yStr=yesterday.toISOString().split('T')[0];
+    const yStr=ymd(yesterday);
     const ysSales=allSales.filter(s=>s.date===yStr).length;
     const ysRets=getRets().filter(r=>r.date===yStr).length;
     const lastST=localStorage.getItem('mq_last_stocktake')||'';
@@ -2437,7 +2441,7 @@ function sellerBreakdownMsg(list,monthPrefix){
 // ===== WHATSAPP SHARE =====
 function shareWhatsApp(type){
   const now=new Date();
-  const today=now.toISOString().split('T')[0];
+  const today=ymd(now);
   const MNAMES=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   const allSales=getSales();
   const allRets=getRets();
@@ -2546,7 +2550,7 @@ let targetEditType='qty';
 
 function openTargetModal(){
   const sel=document.getElementById('dashMonthSel');
-  const monthPrefix=sel?sel.value:new Date().toISOString().slice(0,7);
+  const monthPrefix=sel?sel.value:ymd(new Date()).slice(0,7);
   targetEditMonth=monthPrefix;
   const targets=getTargets();
   const existing=targets[monthPrefix];
@@ -2626,7 +2630,7 @@ function renderTargetCard(monthPrefix,monthName,monthQty,monthRev){
       :'<div style="font-size:11px;color:var(--muted)">باقي <strong style="color:'+color+'">'+remaining.toLocaleString('ar-EG')+' '+unit+'</strong> للوصول للتارجت</div>'
     )+(function(){
       const nd=new Date();
-      if(isHit||monthPrefix!==nd.toISOString().slice(0,7))return '';
+      if(isHit||monthPrefix!==ymd(nd).slice(0,7))return '';
       const dim=new Date(nd.getFullYear(),nd.getMonth()+1,0).getDate(),dn=nd.getDate(),left=Math.max(0,dim-dn);
       const proj=achieved/dn*dim,ok=proj>=t.value;
       let h='<div style="font-size:12px;margin-top:8px;font-weight:700;color:'+(ok?'var(--grn)':'var(--org)')+'">'+(ok?'✅ بالمعدل ده هتوصل ':'⚠️ بالمعدل ده هتقفل على ')+Math.round(proj).toLocaleString('ar-EG')+' '+unit+'</div>';
@@ -2661,7 +2665,7 @@ function renderSellerTargets(monthPrefix,monthName,monthSales){
   names.sort(function(a,b){return ((agg[b]||{r:0}).r)-((agg[a]||{r:0}).r)});
   let html='';
   const nowD=new Date();
-  const isCur=monthPrefix===nowD.toISOString().slice(0,7);
+  const isCur=monthPrefix===ymd(nowD).slice(0,7);
   const dim=new Date(nowD.getFullYear(),nowD.getMonth()+1,0).getDate();
   const dayN=nowD.getDate(),daysLeft=Math.max(0,dim-dayN);
   names.forEach(function(n,i){
@@ -2701,7 +2705,7 @@ function renderSellerTargets(monthPrefix,monthName,monthSales){
 
 function editSellerTarget(name){
   const sel=document.getElementById('dashMonthSel');
-  const mp=sel?sel.value:new Date().toISOString().slice(0,7);
+  const mp=sel?sel.value:ymd(new Date()).slice(0,7);
   const targets=getTargets();
   const t=targets[mp]||{type:'rev',value:0};
   if(!t.perSeller)t.perSeller={};
@@ -2772,7 +2776,7 @@ function renderTargetHistory(currentMonthPrefix){
 
 function resetDashMonth(){
   const sel=document.getElementById('dashMonthSel');
-  if(sel){sel.value=new Date().toISOString().slice(0,7);renderDashboard()}
+  if(sel){sel.value=ymd(new Date()).slice(0,7);renderDashboard()}
 }
 
 function toggleFab(){
